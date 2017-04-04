@@ -1,14 +1,14 @@
 {
-  "name": "pvserver_helper",
+  "name": "pvserverhelper",
   "version": "1.0.0",
   "description": "This is an npm module design to perform common uses with pVelocity's pvserver",
-  "main": "pvserverHelper.js",
+  "main": "pvserverhelper.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/pVelocity/pvserverHelper.git"
+    "url": "git+https://github.com/pVelocity/pvserverhelper.git"
   },
   "keywords": [
     "pVelocity",
@@ -17,7 +17,7 @@
   "author": "Allen Allen Chung <allen.chung@pvelocity.com> (http://www.pvelocity.com)",
   "license": "ISC",
   "bugs": {
-    "url": "https://github.com/pVelocity/pvserverHelper/issues"
+    "url": "https://github.com/pVelocity/pvserverhelper/issues"
   },
-  "homepage": "https://github.com/pVelocity/pvserverHelper#readme"
+  "homepage": "https://github.com/pVelocity/pvserverhelper#readme"
 }

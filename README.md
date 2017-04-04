@@ -17,6 +17,8 @@ var pvh = require('pvserverHelper');
 pvserverHelper requires the following packages to be passed as a libray object for each function call.
 
 ```js
+require('pvjs');
+
 var jsapi = {};
 jsapi.pvserver = require('pvserver');
 jsapi.mongodb = require('mongodb');
