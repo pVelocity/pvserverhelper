@@ -11,7 +11,7 @@ Install the ``pvserverhelper`` module.
 Use the require statement to load the module.
 
 ```js
-var pvh = require('pvserverHelper');
+var pvh = require('pvserverhelper');
 ```
 
 pvserverHelper requires the following packages to be passed as a libray object for each function call.
