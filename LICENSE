@@ -1,29 +1,3 @@
-# pvserverHelper
-
-This is an npm module design to perform common uses with pVelocity's [pvserver](https://github.com/pVelocity/pvserver).
-
-##Getting Started
-
-Install the ``pvserverhelper`` module.
-
-    npm install --save pvserverhelper
-
-Use the require statement to load the module.
-
-```js
-var pvh = require('pvserverHelper');
-```
-
-pvserverHelper requires the following packages to be passed as a libray object for each function call.
-
-```js
-var jsapi = {};
-jsapi.pvserver = require('pvserver');
-jsapi.mongodb = require('mongodb');
-```
-
-##License
-
 Copyright (c) 2016, pVelocity Inc
 
 Permission to use, copy, modify, and/or distribute this software for any
