@@ -1,4 +1,4 @@
-# pvserverHelper
+# pvserverhelper
 
 This is an npm module design to perform common uses with pVelocity's [pvserver](https://github.com/pVelocity/pvserver).
 

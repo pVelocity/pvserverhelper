@@ -45,6 +45,33 @@ module.exports = {
         }
     },
 
+    serializePromises: function(jsapi, workArray, workFunction) {
+        var results = [];
+        return new jsapi.pvserver.Promise(function(resolve, reject) {
+            var next = function(curIndex) {
+                if (curIndex < workArray.length) {
+                    workFunction(workArray[curIndex]).then(function(result) {
+                        results.push(result);
+
+                        setImmediate(function() {
+                            next(curIndex + 1);
+                        });
+                    }).catch(function(err) {
+                        reject(err);
+                    });
+                } else {
+                    resolve(results);
+                }
+            };
+
+            try {
+                next(0);
+            } catch (err) {
+                reject(err);
+            }
+        });
+    },
+
     cleanup: function(jsapi) {
         if (jsapi.mongoConn) {
             jsapi.mongoConn.close();
@@ -508,7 +535,7 @@ module.exports = {
         return jsapi.mongoConn.collection(collectionName).find(filter, projection).toArrayAsync();
     },
 
-    move: function(jsapi, sourceCollection, targetCollection, filter, projection) {
+    copy: function(jsapi, sourceCollection, targetCollection, filter, projection) {
         if (PV.isObject(filter) === false) {
             filter = {};
         }
@@ -522,6 +549,22 @@ module.exports = {
                 return result;
             }
         });
+    },
+
+    move: function(jsapi, sourceCollection, targetCollection, filter, cleanId) {
+        var projection = {};
+        if (cleanId === true) {
+            projection = {
+                _id: 0
+            };
+        }
+        return this.copy(jsapi, sourceCollection, targetCollection, filter, projection).then(function(result) {
+            if (PV.isObject(filter) === false) {
+                return this.dropCollection(jsapi, sourceCollection);
+            } else {
+                return jsapi.mongoConn.collection(sourceCollection).removeAsync(filter);
+            }
+        }.bind(this));
     },
 
     getAggregateProjectMapping: function(jsapi, collectionName, filter) {
