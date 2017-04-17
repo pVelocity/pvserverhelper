@@ -2,7 +2,7 @@
 
 This is an npm module design to perform common uses with pVelocity's [pvserver](https://github.com/pVelocity/pvserver).
 
-##Getting Started
+## Getting Started
 
 Install the ``pvserverhelper`` module.
 
@@ -22,9 +22,10 @@ require('pvjs');
 var jsapi = {};
 jsapi.pvserver = require('pvserver');
 jsapi.mongodb = require('mongodb');
+pvh.setupLogger(jsapi);
 ```
 
-##License
+## License
 
 Copyright (c) 2016, pVelocity Inc
 
