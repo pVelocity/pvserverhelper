@@ -734,8 +734,38 @@ module.exports = {
         return PV.isString(jsapi[infoTag].modelId);
     },
 
+    createSalesforceProviderModel: function(jsapi, access_token, instance_url) {
+        if (PV.isObject(jsapi.sfdc) === false) {
+            jsapi.sfdc = {};
+        }
+        var dataSetQuery = {
+            'Type': 'Salesforce',
+            'KeyValue': [{
+                'Key': 'access_token',
+                'Value': access_token
+            }, {
+                'Key': 'instance_url',
+                'Value': instance_url
+            }],
+            'Mode': 'authenticateOnly'
+        };
+        jsapi.logger.info('Creating provider model with ' + access_token + ' on ' + instance_url);
+        return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
+            if (this.isResultOk(resp)) {
+                var status = this.getPVStatus(resp);
+                jsapi.sfdc.modelId = status.ModelId;
+            } else {
+                jsapi.sfdc.modelId = null;
+                jsapi.logger.error(this.getPVStatus(resp));
+                return false;
+            }
+        }.bind(this));
+    },
+
     createMongoProviderModel: function(jsapi, username, appName, dbHostName, options) {
-        jsapi.mongo = {};
+        if (PV.isObject(jsapi.mongo) === false) {
+            jsapi.mongo = {};
+        }
         var dataSetQuery = {
             'Type': 'MongoDB',
             'KeyValue': [{
