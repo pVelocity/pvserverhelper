@@ -746,8 +746,7 @@ module.exports = {
             }, {
                 'Key': 'instance_url',
                 'Value': instance_url
-            }],
-            'Mode': 'authenticateOnly'
+            }]
         };
         jsapi.logger.info('Creating provider model with ' + access_token + ' on ' + instance_url);
         return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
