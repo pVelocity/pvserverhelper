@@ -5,6 +5,9 @@
 /* jshint node: true */
 /* jshint unused: false */
 
+var iconv = require('iconv-lite');
+var fs = require('fs');
+
 module.exports = {
     sessionJsapiCache: {},
 
@@ -202,6 +205,31 @@ module.exports = {
                 console.log('TIMER: ' + timedMsg);
             }
         };
+    },
+
+    convertFile: function(jsapi, converter, source, target, decoding, encoding) {
+        return new jsapi.pvserver.Promise(function(resolve, reject) {
+            var rd = fs.createReadStream(source);
+            rd.on('error', rejectCleanup);
+            var wr = fs.createWriteStream(target);
+            wr.on('error', rejectCleanup);
+
+            function rejectCleanup(err) {
+                rd.destroy();
+                wr.end();
+                reject(err);
+            }
+            wr.on('finish', resolve);
+
+            if (PV.isString(decoding) && PV.isString(encoding)) {
+                rd.pipe(iconv.decodeStream(decoding))
+                    .pipe(iconv.encodeStream(encoding))
+                    .pipe(converter)
+                    .pipe(wr);
+            } else {
+                rd.pipe(converter).pipe(wr);
+            }
+        });
     },
 
     exec: function(jsapi, cmd) {
