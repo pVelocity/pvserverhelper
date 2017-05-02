@@ -566,7 +566,7 @@ module.exports = {
         return jsapi.mongoConn.collection(collectionName).find(filter, projection).toArrayAsync();
     },
 
-    copy: function(jsapi, sourceCollection, targetCollection, filter, projection) {
+    copy: function(jsapi, sourceCollection, targetCollection, filter, projection, overwriteKey) {
         if (PV.isObject(filter) === false) {
             filter = {};
         }
@@ -575,11 +575,22 @@ module.exports = {
         }
         return jsapi.mongoConn.collection(sourceCollection).find(filter, projection).toArrayAsync().then(function(result) {
             if (result.length > 0) {
-                return jsapi.mongoConn.collection(targetCollection).insertManyAsync(result);
+                if (PV.isString(overwriteKey)) {
+                    var bulk = jsapi.mongoConn.collection(targetCollection).initializeOrderedBulkOp();
+                    result.forEach(function(item) {
+                        var filter2 = {};
+                        filter2[overwriteKey] = item[overwriteKey];
+                        bulk.find(filter2).remove();
+                        bulk.insert(item);
+                    });
+                    return this.bulkExecute(jsapi, bulk);
+                } else {
+                    return jsapi.mongoConn.collection(targetCollection).insertManyAsync(result);
+                }
             } else {
                 return result;
             }
-        });
+        }.bind(this));
     },
 
     move: function(jsapi, sourceCollection, targetCollection, filter, cleanId) {
