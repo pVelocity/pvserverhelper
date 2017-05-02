@@ -486,34 +486,37 @@ module.exports = {
             promises.push(this.dropCollection(jsapi, tempLookupCollection));
             promises.push(this.dropCollection(jsapi, sourceCollectionName));
 
+            var bulk = jsapi.mongoConn.collection(tempSourceCollection).initializeOrderedBulkOp();
             for (var lookupField in lookupInfo) {
                 var lookup = lookupInfo[lookupField];
                 var lookupFieldKey = PV.createHash(lookupField + '3_' + timestamp);
 
-                var rename = {};
-                rename[lookupFieldKey] = PV.isString(lookup.rename) ? lookup.rename : lookupField;
-
-                var filter = {};
-                filter[lookupFieldKey] = {
-                    $exists: true
-                };
-
-                promises.push(jsapi.mongoConn.collection(tempSourceCollection).updateManyAsync(filter, {
-                    $rename: rename
-                }));
-
                 var defaultValue = lookup.defaultValue;
                 if (PV.isNull(defaultValue) === false && PV.isUndefined(defaultValue) === false) {
-                    var filter2 = {};
-                    filter2[lookupFieldKey] = {
+                    var filter = {};
+                    filter[lookupFieldKey] = {
                         $exists: false
                     };
                     var set = {};
                     set[PV.isString(lookup.rename) ? lookup.rename : lookupField] = defaultValue;
-                    promises.push(jsapi.mongoConn.collection(tempSourceCollection).updateManyAsync(filter2, {
+
+                    bulk.find(filter).update({
                         $set: set
-                    }));
+                    });
                 }
+
+                var rename = {};
+                rename[lookupFieldKey] = PV.isString(lookup.rename) ? lookup.rename : lookupField;
+
+                var filter2 = {};
+                filter2[lookupFieldKey] = {
+                    $exists: true
+                };
+                bulk.find(filter2).update({
+                    $rename: rename
+                });
+
+                promises.push(this.bulkExecute(jsapi, bulk));
             }
             return jsapi.pvserver.Promise.all(promises);
         }.bind(this)).then(function() {
