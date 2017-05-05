@@ -533,20 +533,22 @@ module.exports = {
         }
 
         var project = {};
-        arr.forEach(function(element) {
-            var value = null;
-            if (aggregated === true) {
-                value = '$_id.' + element;
-            } else {
-                value = '$' + element;
-            }
-            if (PV.isString(accumulator)) {
-                project[element] = {};
-                project[element][accumulator] = value;
-            } else {
-                project[element] = value;
-            }
-        });
+        if (PV.isArray(arr)) {
+            arr.forEach(function(element) {
+                var value = null;
+                if (aggregated === true) {
+                    value = '$_id.' + element;
+                } else {
+                    value = '$' + element;
+                }
+                if (PV.isString(accumulator)) {
+                    project[element] = {};
+                    project[element][accumulator] = value;
+                } else {
+                    project[element] = value;
+                }
+            });
+        }
         if (exclude_id !== true) {
             project._id = 0;
         }
