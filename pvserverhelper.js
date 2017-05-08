@@ -53,7 +53,7 @@ module.exports = {
         return new jsapi.pvserver.Promise(function(resolve, reject) {
             var next = function(curIndex) {
                 if (curIndex < workArray.length) {
-                    workFunction(workArray[curIndex]).then(function(result) {
+                    workFunction.apply(jsapi, workArray[curIndex]).then(function(result) {
                         results.push(result);
 
                         setImmediate(function() {
