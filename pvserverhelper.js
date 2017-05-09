@@ -806,72 +806,87 @@ module.exports = {
     },
 
     createMongoProviderModel: function(jsapi, username, appName, dbHostName, options) {
-        if (PV.isObject(jsapi.mongo) === false) {
-            jsapi.mongo = {};
-        }
-        var dataSetQuery = {
-            'Type': 'MongoDB',
-            'KeyValue': [{
-                'Key': 'userId',
-                'Value': username
-            }, {
-                'Key': 'appName',
-                'Value': appName
-            }, {
-                'Key': 'mongoDBHostName',
-                'Value': dbHostName
-            }]
-        };
+        return new jsapi.pvserver.Promise(function(resolve, reject) {
+            if (PV.isObject(jsapi.mongo) === false) {
+                jsapi.mongo = {};
+            }
 
-        jsapi.logger.info('Creating provider model with ' + username + ' for ' + appName + ' accessing ' + dbHostName);
-        return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-            if (this.isResultOk(resp)) {
-                var status = this.getPVStatus(resp);
-                jsapi.mongo.modelId = status.ModelId;
-                jsapi.logger.info('Getting provider model url with ' + status.ModelId);
-                return this.getProviderModelUrl(jsapi, options);
+            if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
+                jsapi.logger.info('Provider model id already already exist');
+                resolve(this.getProviderModelUrl(jsapi, options));
             } else {
-                jsapi.mongo.modelId = null;
-                jsapi.logger.error(this.getPVStatus(resp));
-                return false;
+                var dataSetQuery = {
+                    'Type': 'MongoDB',
+                    'KeyValue': [{
+                        'Key': 'userId',
+                        'Value': username
+                    }, {
+                        'Key': 'appName',
+                        'Value': appName
+                    }, {
+                        'Key': 'mongoDBHostName',
+                        'Value': dbHostName
+                    }]
+                };
+
+                jsapi.logger.info('Creating provider model with ' + username + ' for ' + appName + ' accessing ' + dbHostName);
+                return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
+                    if (this.isResultOk(resp)) {
+                        var status = this.getPVStatus(resp);
+                        jsapi.mongo.modelId = status.ModelId;
+                        jsapi.logger.info('Getting provider model url with ' + status.ModelId);
+                        resolve(this.getProviderModelUrl(jsapi, options));
+                    } else {
+                        jsapi.mongo.modelId = null;
+                        jsapi.logger.error(this.getPVStatus(resp));
+                        resolve(false);
+                    }
+                }.bind(this));
             }
         }.bind(this));
     },
 
     getProviderModelUrl: function(jsapi, options) {
-        return jsapi.pv.sendRequest('GetProviderModelUrl', {
-            'ProfitModel': jsapi.mongo.modelId
-        }).then(function(resp) {
-            if (this.isResultOk(resp)) {
-                var status = this.getPVStatus(resp);
-                var info = this.parseProviderModelUrl(status.Url);
-
-                jsapi.mongo.host = info.host;
-                jsapi.mongo.dbname = info.dbname;
-
-                var optionsStr = PV.convertObjectToStr(options);
-                if (optionsStr !== '') {
-                    optionsStr = '?' + optionsStr;
-                }
-                jsapi.mongo.url = status.Url + optionsStr;
-
-                if (PV.isString(info.host) && PV.isString(info.dbname)) {
-                    jsapi.logger.info('Mongo Host: ' + jsapi.mongo.host);
-                    jsapi.logger.info('Mongo Database: ' + jsapi.mongo.dbname);
-                    return true;
-                } else {
-                    jsapi.logger.error({
-                        message: 'Unable to extract Mongo host from data source url',
-                        code: 'Parsing Error'
-                    });
-                    return false;
-                }
+        return new jsapi.pvserver.Promise(function(resolve, reject) {
+            if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
+                jsapi.logger.info('Mongo Host, Database and Url already exist');
+                resolve(true);
             } else {
-                jsapi.mongo.url = null;
-                jsapi.mongo.host = null;
-                jsapi.mongo.dbname = null;
-                jsapi.logger.error(this.getPVStatus(resp));
-                return false;
+                return jsapi.pv.sendRequest('GetProviderModelUrl', {
+                    'ProfitModel': jsapi.mongo.modelId
+                }).then(function(resp) {
+                    if (this.isResultOk(resp)) {
+                        var status = this.getPVStatus(resp);
+                        var info = this.parseProviderModelUrl(status.Url);
+
+                        jsapi.mongo.host = info.host;
+                        jsapi.mongo.dbname = info.dbname;
+
+                        var optionsStr = PV.convertObjectToStr(options);
+                        if (optionsStr !== '') {
+                            optionsStr = '?' + optionsStr;
+                        }
+                        jsapi.mongo.url = status.Url + optionsStr;
+
+                        if (PV.isString(info.host) && PV.isString(info.dbname)) {
+                            jsapi.logger.info('Mongo Host: ' + jsapi.mongo.host);
+                            jsapi.logger.info('Mongo Database: ' + jsapi.mongo.dbname);
+                            resolve(true);
+                        } else {
+                            jsapi.logger.error({
+                                message: 'Unable to extract Mongo host from data source url',
+                                code: 'Parsing Error'
+                            });
+                            resolve(false);
+                        }
+                    } else {
+                        jsapi.mongo.url = null;
+                        jsapi.mongo.host = null;
+                        jsapi.mongo.dbname = null;
+                        jsapi.logger.error(this.getPVStatus(resp));
+                        resolve(false);
+                    }
+                }.bind(this));
             }
         }.bind(this));
     },
@@ -881,55 +896,60 @@ module.exports = {
             if (PV.isObject(jsapi.mongo) === false) {
                 jsapi.mongo = {};
             }
-            if (PV.isString(serverHost) && PV.isString(database)) {
-                jsapi.mongo.host = serverHost;
-                jsapi.mongo.dbname = database;
-                var arr = [];
-                arr.push('mongodb://');
-
-                if (PV.isString(serverUserId)) {
-                    arr.push(encodeURIComponent(serverUserId));
-
-                    if (PV.isString(serverPassword)) {
-                        arr.push(':' + encodeURIComponent(serverPassword));
-                    }
-                    arr.push('@');
-                }
-                arr.push(serverHost);
-
-                if (PV.isString(serverPort)) {
-                    arr.push(':' + serverPort);
-                }
-                arr.push('/' + database);
-
-                var optionsStr = null;
-                if (PV.isString(serverAuthDatabase)) {
-                    var optionsObj = {};
-                    if (PV.isObject(options)) {
-                        for (var k in options) optionsObj[k] = options[k];
-                    }
-                    optionsObj.authSource = serverAuthDatabase;
-                    optionsStr = PV.convertObjectToStr(optionsObj);
-                } else {
-                    if (PV.isObject(options)) {
-                        optionsStr = PV.convertObjectToStr(options);
-                    }
-                }
-
-                if (optionsStr !== '') {
-                    arr.push('?' + optionsStr);
-                }
-                jsapi.mongo.url = arr.join('');
+            if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
+                jsapi.logger.info('Mongo Host, Database and Url already exist');
                 resolve(true);
             } else {
-                jsapi.mongo.url = null;
-                jsapi.mongo.host = null;
-                jsapi.mongo.dbname = null;
-                jsapi.logger.error({
-                    message: 'Missing data source url parameters',
-                    code: 'Bad Parameters'
-                });
-                resolve(false);
+                if (PV.isString(serverHost) && PV.isString(database)) {
+                    jsapi.mongo.host = serverHost;
+                    jsapi.mongo.dbname = database;
+                    var arr = [];
+                    arr.push('mongodb://');
+
+                    if (PV.isString(serverUserId)) {
+                        arr.push(encodeURIComponent(serverUserId));
+
+                        if (PV.isString(serverPassword)) {
+                            arr.push(':' + encodeURIComponent(serverPassword));
+                        }
+                        arr.push('@');
+                    }
+                    arr.push(serverHost);
+
+                    if (PV.isString(serverPort)) {
+                        arr.push(':' + serverPort);
+                    }
+                    arr.push('/' + database);
+
+                    var optionsStr = null;
+                    if (PV.isString(serverAuthDatabase)) {
+                        var optionsObj = {};
+                        if (PV.isObject(options)) {
+                            for (var k in options) optionsObj[k] = options[k];
+                        }
+                        optionsObj.authSource = serverAuthDatabase;
+                        optionsStr = PV.convertObjectToStr(optionsObj);
+                    } else {
+                        if (PV.isObject(options)) {
+                            optionsStr = PV.convertObjectToStr(options);
+                        }
+                    }
+
+                    if (optionsStr !== '') {
+                        arr.push('?' + optionsStr);
+                    }
+                    jsapi.mongo.url = arr.join('');
+                    resolve(true);
+                } else {
+                    jsapi.mongo.url = null;
+                    jsapi.mongo.host = null;
+                    jsapi.mongo.dbname = null;
+                    jsapi.logger.error({
+                        message: 'Missing data source url parameters',
+                        code: 'Bad Parameters'
+                    });
+                    resolve(false);
+                }
             }
         });
     },
@@ -1044,7 +1064,7 @@ module.exports = {
                         if (matches) {
                             var group = matches[1];
                             var value = matches[2];
-                            if (group === groupName) {
+                            if (group === groupName && value !== '[object Object]') {
                                 result = value;
                             }
                         }
