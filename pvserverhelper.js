@@ -424,7 +424,9 @@ module.exports = {
             var promises = [];
             promises.push(this.getAggregateProjectMapping(jsapi, sourceCollectionName));
             promises.push(this.createCollection(jsapi, tempSourceCollection, true, results[0]));
-            promises.push(jsapi.mongoConn.collection(lookupCollectionName).aggregateAsync(pipeline));
+            promises.push(jsapi.mongoConn.collection(lookupCollectionName).aggregateAsync(pipeline, {
+                allowDiskUse: true
+            }));
 
             return jsapi.pvserver.Promise.all(promises);
         }.bind(this)).then(function(results) {
@@ -479,7 +481,9 @@ module.exports = {
                 $out: tempSourceCollection
             });
 
-            return jsapi.mongoConn.collection(sourceCollectionName).aggregateAsync(pipeline);
+            return jsapi.mongoConn.collection(sourceCollectionName).aggregateAsync(pipeline, {
+                allowDiskUse: true
+            });
         }.bind(this)).then(function() {
             var promises = [];
 
