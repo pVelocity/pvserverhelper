@@ -995,9 +995,16 @@ module.exports = {
     },
 
     convertGroupOrFieldArrayForQueryParams: function(arr) {
+        var uniqueArr = arr.filter(function(elem, index, self) {
+            if (PV.isString(elem)) {
+                return index === self.indexOf(elem);
+            } else {
+                return false;
+            }
+        });
         var newArray = [];
-        arr.forEach(function(field) {
-            if ((typeof field) === 'string') {
+        uniqueArr.forEach(function(field) {
+            if (PV.isString(field)) {
                 newArray.push({
                     '_attrs': {
                         'name': 'Res1'
