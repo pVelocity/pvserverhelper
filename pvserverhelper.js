@@ -156,9 +156,11 @@ module.exports = {
         return fn;
     },
 
-    setupLogger: function(jsapi) {
+    setupLogger: function(jsapi, enableConsoleInfo) {
         if (PV.isObject(jsapi.logger) === false) {
-            jsapi.logger = {};
+            jsapi.logger = {
+                enableConsoleInfo: enableConsoleInfo
+            };
         }
         jsapi.logger.info = function(message, noTimeStamp) {
             var timedMsg = '';
@@ -170,7 +172,9 @@ module.exports = {
             if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
                 jsapi.logger.log('info', timedMsg);
             } else {
-                //console.log('INFO: ' + timedMsg);
+                if (jsapi.logger.enableConsoleInfo === true) {
+                    console.log('INFO: ' + timedMsg);
+                }
             }
         };
         jsapi.logger.error = function(error, throwError) {

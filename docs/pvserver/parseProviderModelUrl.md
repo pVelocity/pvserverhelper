@@ -1,9 +1,7 @@
-### ``createSalesforceProviderModel(jsapi, access_token, instance_url)``
-Creates provider model with ``access_token`` on ``instance_url``.
-- `jsapi` `<Object>`
-- `access_token` `<String>`
-- `instance_url` `<String>`
+### ``parseProviderModelUrl(url)``
+Returns an object with host and database info from the ``url``.
+- `url` `<String>`
 
 ```js
-pvh.createSalesforceProviderModel(jsapi, 'f13fafasfas', 'http://login.salesforce.com');
+pvh.parseProviderModelUrl('mongodb://localhost:27017/test');
 ```
