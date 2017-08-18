@@ -10,6 +10,8 @@ var fs = require('fs');
 var prom = require('bluebird');
 var mongodb = require('mongodb');
 var pvserver = require('pvserver');
+var Converter = require('csvtojson').Converter;
+
 require('pvjs');
 
 module.exports = {
@@ -215,7 +217,13 @@ module.exports = {
         };
     },
 
-    convertFile: function(jsapi, converter, source, target, decoding, encoding) {
+    convertFile: function(source, target, options, decoding, encoding) {
+        var converter = null;
+        if (PV.isObject(options)){
+            converter = new Converter(options);
+        } else {
+            converter = new Converter();
+        }
         return new prom(function(resolve, reject) {
             var rd = fs.createReadStream(source);
             rd.on('error', rejectCleanup);
@@ -259,7 +267,7 @@ module.exports = {
         });
     },
 
-    bulkExecute: function(jsapi, bulk) {
+    bulkExecute: function(bulk) {
         return new prom(function(resolve, reject) {
             bulk.execute(function(err, result) {
                 if (err) {
@@ -528,7 +536,7 @@ module.exports = {
                     $rename: rename
                 });
 
-                promises.push(this.bulkExecute(jsapi, bulk));
+                promises.push(this.bulkExecute(bulk));
             }
             return prom.all(promises);
         }.bind(this)).then(function() {
@@ -597,7 +605,7 @@ module.exports = {
                         bulk.find(filter2).remove();
                         bulk.insert(item);
                     });
-                    return this.bulkExecute(jsapi, bulk);
+                    return this.bulkExecute(bulk);
                 } else {
                     return jsapi.mongoConn.collection(targetCollection).insertManyAsync(result);
                 }
