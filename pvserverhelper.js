@@ -7,6 +7,10 @@
 
 var iconv = require('iconv-lite');
 var fs = require('fs');
+var prom = require('bluebird');
+var mongodb = require('mongodb');
+var pvserver = require('pvserver');
+require('pvjs');
 
 module.exports = {
     sessionJsapiCache: {},
@@ -50,7 +54,7 @@ module.exports = {
 
     serializePromises: function(jsapi, workArray, workFunction) {
         var results = [];
-        return new jsapi.pvserver.Promise(function(resolve, reject) {
+        return new prom(function(resolve, reject) {
             var next = function(curIndex) {
                 if (curIndex < workArray.length) {
                     workFunction.apply(jsapi, workArray[curIndex]).then(function(result) {
@@ -208,7 +212,7 @@ module.exports = {
     },
 
     convertFile: function(jsapi, converter, source, target, decoding, encoding) {
-        return new jsapi.pvserver.Promise(function(resolve, reject) {
+        return new prom(function(resolve, reject) {
             var rd = fs.createReadStream(source);
             rd.on('error', rejectCleanup);
             var wr = fs.createWriteStream(target);
@@ -233,7 +237,7 @@ module.exports = {
     },
 
     exec: function(jsapi, cmd) {
-        return new jsapi.pvserver.Promise(function(resolve, reject) {
+        return new prom(function(resolve, reject) {
             try {
                 var exec = require('child_process').exec;
                 exec(cmd, function(error, stdout, stderr) {
@@ -252,7 +256,7 @@ module.exports = {
     },
 
     bulkExecute: function(jsapi, bulk) {
-        return new jsapi.pvserver.Promise(function(resolve, reject) {
+        return new prom(function(resolve, reject) {
             bulk.execute(function(err, result) {
                 if (err) {
                     reject(err);
@@ -271,7 +275,7 @@ module.exports = {
                     promises.push(jsapi.mongoConn.collection(collection.name).dropAsync());
                 }
             });
-            return jsapi.pvserver.Promise.all(promises);
+            return prom.all(promises);
         });
     },
 
@@ -350,7 +354,7 @@ module.exports = {
             }
         }
 
-        return jsapi.pvserver.Promise.all(promises);
+        return prom.all(promises);
     },
 
     // this replaces your source collection with a projection that includes the lookup fields
@@ -405,7 +409,7 @@ module.exports = {
         promises.push(jsapi.mongoConn.collection(sourceCollectionName).indexInformationAsync());
         promises.push(this.createCollection(jsapi, tempLookupCollection, true, indices));
 
-        return jsapi.pvserver.Promise.all(promises).then(function(results) {
+        return prom.all(promises).then(function(results) {
             var pipeline = [];
             if (PV.isArray(lookupOperations)) {
                 lookupOperations.forEach(function(operation) {
@@ -428,7 +432,7 @@ module.exports = {
                 allowDiskUse: true
             }));
 
-            return jsapi.pvserver.Promise.all(promises);
+            return prom.all(promises);
         }.bind(this)).then(function(results) {
             var project = results[0];
 
@@ -522,7 +526,7 @@ module.exports = {
 
                 promises.push(this.bulkExecute(jsapi, bulk));
             }
-            return jsapi.pvserver.Promise.all(promises);
+            return prom.all(promises);
         }.bind(this)).then(function() {
             return jsapi.mongoConn.collection(tempSourceCollection).rename(sourceCollectionName);
         }.bind(this));
@@ -562,7 +566,7 @@ module.exports = {
     find: function(jsapi, collectionName, id, projection) {
         var filter = {};
         if (PV.isString(id)) {
-            filter._id = new jsapi.mongodb.ObjectId.createFromHexString(id);
+            filter._id = new mongodb.ObjectId.createFromHexString(id);
         } else if (PV.isObject(id)) {
             filter._id = id;
         }
@@ -661,7 +665,7 @@ module.exports = {
 
             var updateFilter = {};
             if (PV.isString(id)) {
-                updateFilter._id = new jsapi.mongodb.ObjectId.createFromHexString(id);
+                updateFilter._id = new mongodb.ObjectId.createFromHexString(id);
             } else if (PV.isObject(id)) {
                 updateFilter._id = id;
             }
@@ -670,7 +674,7 @@ module.exports = {
                 $set: set
             }));
 
-            return jsapi.pvserver.Promise.all(promises);
+            return prom.all(promises);
         });
     },
 
@@ -698,7 +702,7 @@ module.exports = {
 
     login: function(jsapi, protocol, host, port, username, password) {
         jsapi.logger.info('Logging in ' + protocol + '://' + host + ':' + port);
-        jsapi.pv = new jsapi.pvserver.PVServerAPI(protocol + '://' + host + ':' + port);
+        jsapi.pv = new pvserver.PVServerAPI(protocol + '://' + host + ':' + port);
         return jsapi.pv.login(username, password, null).then(function(resp) {
             if (this.isResultOk(resp)) {
                 return true;
@@ -710,9 +714,9 @@ module.exports = {
     },
 
     loginWithSession: function(jsapi) {
-        return new jsapi.pvserver.Promise(function(resolve, reject) {
+        return new prom(function(resolve, reject) {
             if (PV.isObject(jsapi.pv) === false) {
-                jsapi.pv = new jsapi.pvserver.PVServerAPI(jsapi.PVSession.engineSessionInfo.url);
+                jsapi.pv = new pvserver.PVServerAPI(jsapi.PVSession.engineSessionInfo.url);
                 jsapi.pv.login(null, null, jsapi.PVSession.engineSessionInfo.apiKey).then(function(resp) {
                     if (this.isResultOk(resp)) {
                         resolve(true);
@@ -810,7 +814,7 @@ module.exports = {
     },
 
     createMongoProviderModel: function(jsapi, username, appName, dbHostName, options) {
-        return new jsapi.pvserver.Promise(function(resolve, reject) {
+        return new prom(function(resolve, reject) {
             if (PV.isObject(jsapi.mongo) === false) {
                 jsapi.mongo = {};
             }
@@ -851,7 +855,7 @@ module.exports = {
     },
 
     getProviderModelUrl: function(jsapi, options) {
-        return new jsapi.pvserver.Promise(function(resolve, reject) {
+        return new prom(function(resolve, reject) {
             if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
                 jsapi.logger.info('Mongo Host, Database and Url already exist');
                 resolve(true);
@@ -896,7 +900,7 @@ module.exports = {
     },
 
     setupMongoDBUrl: function(jsapi, serverHost, serverPort, serverUserId, serverPassword, serverAuthDatabase, database, options) {
-        return new jsapi.pvserver.Promise(function(resolve, reject) {
+        return new prom(function(resolve, reject) {
             if (PV.isObject(jsapi.mongo) === false) {
                 jsapi.mongo = {};
             }
@@ -959,10 +963,10 @@ module.exports = {
     },
 
     createMongoDB: function(jsapi) {
-        return new jsapi.pvserver.Promise(function(resolve, reject) {
+        return new prom(function(resolve, reject) {
             if (PV.isObject(jsapi.mongoConn) === false) {
                 if (PV.isObject(jsapi.mongo) && PV.isString(jsapi.mongo.url)) {
-                    var MongoClient = jsapi.pvserver.Promise.promisifyAll(jsapi.mongodb);
+                    var MongoClient = prom.promisifyAll(mongodb);
                     MongoClient.connect(jsapi.mongo.url).then(function(dbconn) {
                         jsapi.mongoConn = dbconn;
                         resolve(true);

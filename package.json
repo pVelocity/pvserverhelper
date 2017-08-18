@@ -1,6 +1,6 @@
 {
   "name": "pvserverhelper",
-  "version": "1.0.9",
+  "version": "1.0.10",
   "description": "This is an npm module design to perform common uses with pVelocity's pvserver",
   "main": "pvserverhelper.js",
   "scripts": {
@@ -21,6 +21,10 @@
   },
   "homepage": "https://github.com/pVelocity/pvserverhelper#readme",
   "dependencies": {
-    "iconv-lite": "^0.4.15"
+    "bluebird": "^3.5.0",
+    "iconv-lite": "^0.4.15",
+    "mongodb": "^2.2.31",
+    "pvjs": "^1.0.3",
+    "pvserver": "^0.2.4"
   }
 }

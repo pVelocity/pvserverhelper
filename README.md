@@ -14,16 +14,63 @@ Use the require statement to load the module.
 var pvh = require('pvserverhelper');
 ```
 
-pvserverHelper requires the following packages to be passed as a libray object for each function call.
+## Methods
 
-```js
-require('pvjs');
+### pvserver
+- [login](docs/pvserver/login.md)
+- [loginWithSession](docs/pvserver/loginWithSession.md)
+- [parseProviderModelUrl](docs/pvserver/parseProviderModelUrl.md)
+- [getProviderModelInfo](docs/pvserver/getProviderModelInfo.md)
+- [createSalesforceProviderModel](docs/pvserver/createSalesforceProviderModel.md)
+- [createMongoProviderModel](docs/pvserver/createMongoProviderModel.md)
+- [getProviderModelUrl](docs/pvserver/getProviderModelUrl.md)
+- [getEntityGroupsAndFields](docs/pvserver/getEntityGroupsAndFields.md)
+- [convertGroupOrFieldArrayForQueryParams](docs/pvserver/convertGroupOrFieldArrayForQueryParams.md)
+- [removeEntityRelationshipGroupAndFields](docs/pvserver/removeEntityRelationshipGroupAndFields.md)
+- [getGroupValueFromQueryParams](docs/pvserver/getGroupValueFromQueryParams.md)
 
-var jsapi = {};
-jsapi.pvserver = require('pvserver');
-jsapi.mongodb = require('mongodb');
-pvh.setupLogger(jsapi);
-```
+### MongoDB
+- [setupMongoDBUrl](docs/MongoDB/setupMongoDBUrl.md)
+- [createMongoDB](docs/MongoDB/createMongoDB.md)
+- [cleanupChildren](docs/MongoDB/cleanupChildren.md)
+- [dropSomeCollections](docs/MongoDB/dropSomeCollections.md)
+- [dropCollection](docs/MongoDB/dropCollection.md)
+- [createCollection](docs/MongoDB/createCollection.md)
+- [createIndices](docs/MongoDB/createIndices.md)
+- [find](docs/MongoDB/find.md)
+- [copy](docs/MongoDB/copy.md)
+- [move](docs/MongoDB/move.md)
+- [bulkExecute](docs/MongoDB/bulkExecute.md)
+- [getAggregateProjectMapping](docs/MongoDB/getAggregateProjectMapping.md)
+- [createExpressionMapping](docs/MongoDB/createExpressionMapping.md)
+- [aggregateLookup](docs/MongoDB/aggregateLookup.md)
+
+### PVStatus
+- [getPVStatus](docs/PVStatus/getPVStatus.md)
+- [getResultCode](docs/PVStatus/getResultCode.md)
+- [getResultMessage](docs/PVStatus/getResultMessage.md)
+- [getResultScriptMessage](docs/PVStatus/getResultScriptMessage.md)
+- [isResultOk](docs/PVStatus/isResultOk.md)
+- [isResultTruncated](docs/PVStatus/isResultTruncated.md)
+- [isResultTooLarge](docs/PVStatus/isResultTooLarge.md)
+- [isBulkUpsertInProgress](docs/PVStatus/isBulkUpsertInProgress.md)
+
+### Other
+- [setupLogger](docs/Other/setupLogger.md)
+- [isEmptyValue](docs/Other/isEmptyValue.md)
+- [convertFile](docs/Other/convertFile.md)
+- [exec](docs/Other/exec.md)
+- [setCallbackTimeout](docs/Other/setCallbackTimeout.md)
+- [checkCallbackTimeout](docs/Other/checkCallbackTimeout.md)
+- [addOrGetSessionJsapiObject](docs/Other/addOrGetSessionJsapiObject.md)
+- [getSessionJsapiObject](docs/Other/getSessionJsapiObject.md)
+- [removeSessionJsapiObject](docs/Other/removeSessionJsapiObject.md)
+- [serializePromises](docs/Other/serializePromises.md)
+- [cleanupForNonCached](docs/Other/cleanupForNonCached.md)
+- [cleanup](docs/Other/cleanup.md)
+- [returnImmediately](docs/Other/returnImmediately.md)
+- [scriptErrHandler](docs/Other/scriptErrHandler.md)
+- [genericErrHandler](docs/Other/genericErrHandler.md)
 
 ## License
 
