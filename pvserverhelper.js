@@ -1082,7 +1082,7 @@ module.exports = {
         var result = null;
         var regexp = /^([^=]+)=[']([^']+)[']$/i;
         try {
-            var dp = queryParams.SearchCriteria.AndFilter;
+            var dp = queryParams.AndFilter;
             PV.ensureArray(dp.OrFilter).forEach(function(compTerm) {
                 var category = compTerm._attrs.category;
                 if ((!objectName || (!category || category === objectName)) && compTerm.AndFilter.Filter) {
