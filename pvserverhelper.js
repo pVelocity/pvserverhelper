@@ -54,32 +54,29 @@ module.exports = {
         }
     },
 
-    serializePromises: function(jsapi, workArray, workFunction) {
+    serializePromises: function(workFunction, workContext, workArray) {
         var results = [];
         return new prom(function(resolve, reject) {
+            var func = workFunction;
+            var context = workContext;
             var next = function(curIndex) {
                 if (curIndex < workArray.length) {
-                    if (PV.isFunction(workFunction)) {
-                        workFunction.apply(jsapi, workArray[curIndex]).then(function(result) {
-                            results.push(result);
-
-                            setImmediate(function() {
-                                next(curIndex + 1);
-                            });
-                        }).catch(function(err) {
-                            reject(err);
-                        });
-                    } else {
-                        workFunction[curIndex].apply(jsapi, workArray[curIndex]).then(function(result) {
-                            results.push(result);
-
-                            setImmediate(function() {
-                                next(curIndex + 1);
-                            });
-                        }).catch(function(err) {
-                            reject(err);
-                        });
+                    if (PV.isArray(workFunction)) {
+                        func = workFunction[curIndex];
                     }
+                    if (PV.isArray(workContext)) {
+                        context = workContext[curIndex];
+                    }
+
+                    func.apply(context, workArray[curIndex]).then(function(result) {
+                        results.push(result);
+
+                        setImmediate(function() {
+                            next(curIndex + 1);
+                        });
+                    }).catch(function(err) {
+                        reject(err);
+                    });
                 } else {
                     resolve(results);
                 }
