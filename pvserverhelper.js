@@ -59,15 +59,27 @@ module.exports = {
         return new prom(function(resolve, reject) {
             var next = function(curIndex) {
                 if (curIndex < workArray.length) {
-                    workFunction.apply(jsapi, workArray[curIndex]).then(function(result) {
-                        results.push(result);
+                    if (PV.isFunction(workFunction)) {
+                        workFunction.apply(jsapi, workArray[curIndex]).then(function(result) {
+                            results.push(result);
 
-                        setImmediate(function() {
-                            next(curIndex + 1);
+                            setImmediate(function() {
+                                next(curIndex + 1);
+                            });
+                        }).catch(function(err) {
+                            reject(err);
                         });
-                    }).catch(function(err) {
-                        reject(err);
-                    });
+                    } else {
+                        workFunction[curIndex].apply(jsapi, workArray[curIndex]).then(function(result) {
+                            results.push(result);
+
+                            setImmediate(function() {
+                                next(curIndex + 1);
+                            });
+                        }).catch(function(err) {
+                            reject(err);
+                        });
+                    }
                 } else {
                     resolve(results);
                 }
@@ -219,7 +231,7 @@ module.exports = {
 
     convertFile: function(source, target, options, decoding, encoding) {
         var converter = null;
-        if (PV.isObject(options)){
+        if (PV.isObject(options)) {
             converter = new Converter(options);
         } else {
             converter = new Converter();
