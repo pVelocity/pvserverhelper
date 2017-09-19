@@ -257,11 +257,16 @@ module.exports = {
         });
     },
 
-    exec: function(jsapi, cmd) {
+    exec: function(jsapi, cmd, options) {
         return new prom(function(resolve, reject) {
             try {
                 var exec = require('child_process').exec;
-                exec(cmd, function(error, stdout, stderr) {
+                if (PV.isObject(options) === false) {
+                    options = {
+                        maxBuffer: 1024 * 500
+                    };
+                }
+                exec(cmd, options, function(error, stdout, stderr) {
                     if (error) {
                         reject(error);
                     } else {
@@ -759,14 +764,24 @@ module.exports = {
         var re = /:[\/][\/]([^\/]+)[\/]([^\/?]+)[?\/]?.*/;
         var m = null;
         if ((m = re.exec(url)) !== null) {
-            if (m.index === re.lastIndex) {
-                re.lastIndex++;
-            }
             info.host = m[1];
             info.dbname = m[2];
         } else {
             info.host = null;
             info.dbname = null;
+        }
+
+        var reOptions = /[?](.*)/;
+        if ((m = reOptions.exec(url)) !== null) {
+            var allOptions = m[1];
+            var options = allOptions.split('&');
+            info.options = {};
+            options.forEach(function(opt) {
+                var opValues = opt.split('=');
+                info.options[opValues[0]] = opValues[1];
+            });
+        } else {
+            info.options = null;
         }
 
         return info;
@@ -893,9 +908,19 @@ module.exports = {
 
                         var optionsStr = PV.convertObjectToStr(options);
                         if (optionsStr !== '') {
-                            optionsStr = '?' + optionsStr;
+                            if (status.Url.indexOf('?') === -1) {
+                                optionsStr = '?' + optionsStr;
+                            } else {
+                                optionsStr = '&' + optionsStr;
+                            }
                         }
                         jsapi.mongo.url = status.Url + optionsStr;
+
+                        if (PV.isObject(info.options)) {
+                            jsapi.mongo.options = info.options;
+                        } else {
+                            jsapi.mongo.options = null;
+                        }
 
                         if (PV.isString(info.host) && PV.isString(info.dbname)) {
                             jsapi.logger.info('Mongo Host: ' + jsapi.mongo.host);
@@ -912,6 +937,7 @@ module.exports = {
                         jsapi.mongo.url = null;
                         jsapi.mongo.host = null;
                         jsapi.mongo.dbname = null;
+                        jsapi.mongo.options = null;
                         jsapi.logger.error(this.getPVStatus(resp));
                         resolve(false);
                     }
@@ -954,13 +980,20 @@ module.exports = {
                     if (PV.isString(serverAuthDatabase)) {
                         var optionsObj = {};
                         if (PV.isObject(options)) {
-                            for (var k in options) optionsObj[k] = options[k];
+                            for (var k in options) {
+                                optionsObj[k] = options[k];
+                            }
                         }
                         optionsObj.authSource = serverAuthDatabase;
+
+                        jsapi.mongo.options = optionsObj;
                         optionsStr = PV.convertObjectToStr(optionsObj);
                     } else {
                         if (PV.isObject(options)) {
+                            jsapi.mongo.options = options;
                             optionsStr = PV.convertObjectToStr(options);
+                        } else {
+                            jsapi.mongo.options = null;
                         }
                     }
 
@@ -973,6 +1006,7 @@ module.exports = {
                     jsapi.mongo.url = null;
                     jsapi.mongo.host = null;
                     jsapi.mongo.dbname = null;
+                    jsapi.mongo.options = null;
                     jsapi.logger.error({
                         message: 'Missing data source url parameters',
                         code: 'Bad Parameters'
