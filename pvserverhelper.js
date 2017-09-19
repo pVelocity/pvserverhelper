@@ -766,7 +766,7 @@ module.exports = {
         if ((m = re.exec(url)) !== null) {
             var host = m[1].split('@');
             if (host.length > 1) {
-                var auth = host[0].split(';');
+                var auth = host[0].split(':');
                 info.username = auth[0];
                 info.password = auth[1];
                 info.host = host[1];
