@@ -764,7 +764,17 @@ module.exports = {
         var re = /:[\/][\/]([^\/]+)[\/]([^\/?]+)[?\/]?.*/;
         var m = null;
         if ((m = re.exec(url)) !== null) {
-            info.host = m[1];
+            var host = m[1].split('@');
+            if (host.length > 1) {
+                var auth = host[0].split(';');
+                info.username = auth[0];
+                info.password = auth[1];
+                info.host = host[1];
+            } else {
+                info.username = null;
+                info.password = null;
+                info.host = m[1];
+            }
             info.dbname = m[2];
         } else {
             info.host = null;
@@ -921,6 +931,16 @@ module.exports = {
                         } else {
                             jsapi.mongo.options = null;
                         }
+                        if (PV.isString(info.username)) {
+                            jsapi.mongo.username = info.username;
+                        } else {
+                            jsapi.mongo.username = null;
+                        }
+                        if (PV.isString(info.password)) {
+                            jsapi.mongo.password = info.password;
+                        } else {
+                            jsapi.mongo.password = null;
+                        }
 
                         if (PV.isString(info.host) && PV.isString(info.dbname)) {
                             jsapi.logger.info('Mongo Host: ' + jsapi.mongo.host);
@@ -938,6 +958,8 @@ module.exports = {
                         jsapi.mongo.host = null;
                         jsapi.mongo.dbname = null;
                         jsapi.mongo.options = null;
+                        jsapi.mongo.username = null;
+                        jsapi.mongo.password = null;
                         jsapi.logger.error(this.getPVStatus(resp));
                         resolve(false);
                     }
@@ -963,11 +985,17 @@ module.exports = {
 
                     if (PV.isString(serverUserId)) {
                         arr.push(encodeURIComponent(serverUserId));
-
+                        jsapi.mongo.username = serverUserId;
                         if (PV.isString(serverPassword)) {
                             arr.push(':' + encodeURIComponent(serverPassword));
+                            jsapi.mongo.password = serverPassword;
+                        } else {
+                            jsapi.mongo.password = null;
                         }
                         arr.push('@');
+                    } else {
+                        jsapi.mongo.username = null;
+                        jsapi.mongo.password = null;
                     }
                     arr.push(serverHost);
 
@@ -1007,6 +1035,8 @@ module.exports = {
                     jsapi.mongo.host = null;
                     jsapi.mongo.dbname = null;
                     jsapi.mongo.options = null;
+                    jsapi.mongo.username = null;
+                    jsapi.mongo.password = null;
                     jsapi.logger.error({
                         message: 'Missing data source url parameters',
                         code: 'Bad Parameters'
