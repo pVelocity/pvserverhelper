@@ -72,6 +72,7 @@ require('pvjs');
 - [matchedIndexOfArray](docs/arrays/matchedIndexOfArray.md)
 
 ### Utility
+- [round](docs/utility/round.md)
 - [randomInt](docs/utility/randomInt.md)
 - [createHash](docs/utility/createHash.md)
 - [pathJoin](docs/utility/pathJoin.md)
