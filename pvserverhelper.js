@@ -97,7 +97,7 @@ module.exports = {
         }
 
         if (jsapi.sfdcConn) {
-            if (jsapi.sfdc.isSession !== true) {
+            if (PV.isObject(jsapi.sfdc) === false || jsapi.sfdc.isSession !== true) {
                 jsapi.sfdcConn.logout();
             }
             jsapi.sfdcConn = null;
