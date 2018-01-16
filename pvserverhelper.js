@@ -10,9 +10,11 @@ var fs = require('fs');
 var prom = require('bluebird');
 var mongodb = require('mongodb');
 var pvserver = require('pvserver');
+var request = require('request');
 var Converter = require('csvtojson').Converter;
 
 require('pvjs');
+
 
 module.exports = {
     sessionJsapiCache: {},
@@ -254,6 +256,49 @@ module.exports = {
             } else {
                 rd.pipe(converter).pipe(wr);
             }
+        });
+    },
+
+    execServlet: function(jsapi, username, password, operation, params, headers) {
+        var options = {
+            headers: {
+                'user-agent': 'pvserverhelper',
+                'content-type': 'application/x-www-form-urlencoded',
+                'cache-control': 'no-cache',
+                'pragma': 'no-cache',
+                'authorization': 'Basic ' + new Buffer(username + ':' + password).toString('base64')
+            }
+        };
+        if (PV.isObject(headers)) {
+            for (var headerKey in headers) {
+                if (headerKey !== 'authorization') {
+                    options.headers[headerKey] = headers[headerKey];
+                }
+            }
+        }
+        options.url = jsapi.pv.urlScheme + '://' + jsapi.pv.hostName + ':' + jsapi.pv.hostPort + '/admin/' + operation;
+
+        if (PV.isObject(params)) {
+            var args = []
+            for (var paramKey in params) {
+                args.push(paramKey + '=' + params[paramKey]);
+            }
+            options.url = options.url + '?' + args.join('&');
+        }
+
+        options.method = 'POST';
+        return this.httpMethod(options);
+    },
+
+    httpMethod: function(options) {
+        return new prom(function(resolve, reject) {
+            request(options, function(err, httpResponse, body) {
+                if (err) {
+                    reject(err);
+                } else {
+                    resolve(body);
+                }
+            });
         });
     },
 
