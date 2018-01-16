@@ -5,12 +5,15 @@ Calls the Engine Calculation Process and Admin Servlets ``operation`` on ``proto
 - `password` `<String>`
 - `operation` `<String>`
 - `params` `<Object>` : Optional, default is `{}`
-- `headers` `<Object>` : Optional, default is `{
-	'user-agent': 'pvserverhelper',
+- `headers` `<Object>` : Optional, default is
+```js
+{
+    'user-agent': 'pvserverhelper',
     'content-type': 'application/x-www-form-urlencoded',
     'cache-control': 'no-cache',
     'pragma': 'no-cache'
-}`
+}
+```
 
 ```js
 pvh.execServlet(jsapi, 'username', 'password', 'GetUsage', {

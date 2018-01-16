@@ -28,6 +28,8 @@ var pvh = require('pvserverhelper');
 - [convertGroupOrFieldArrayForQueryParams](docs/pvserver/convertGroupOrFieldArrayForQueryParams.md)
 - [removeEntityRelationshipGroupAndFields](docs/pvserver/removeEntityRelationshipGroupAndFields.md)
 - [getGroupValueFromQueryParams](docs/pvserver/getGroupValueFromQueryParams.md)
+- [execServlet](docs/pvserver/execServlet.md)
+- [httpMethod](docs/pvserver/httpMethod.md)
 
 ### MongoDB
 - [setupMongoDBUrl](docs/MongoDB/setupMongoDBUrl.md)
