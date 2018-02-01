@@ -603,7 +603,7 @@ module.exports = {
         }.bind(this));
     },
 
-    createExpressionMapping: function(objectOrArray, accumulator, aggregated, exclude_id) {
+    createExpressionMapping: function(objectOrArray, accumulator, aggregated, include_id) {
         var arr = null;
         if (PV.isArray(objectOrArray)) {
             arr = objectOrArray;
@@ -628,7 +628,7 @@ module.exports = {
                 }
             });
         }
-        if (exclude_id !== true) {
+        if (include_id !== true) {
             project._id = 0;
         }
         return project;
