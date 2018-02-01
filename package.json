@@ -24,8 +24,8 @@
     "bluebird": "^3.5.0",
     "csvtojson": "^1.1.7",
     "iconv-lite": "^0.4.15",
-    "mongodb": "^2.2.31",
-    "pvjs": "^1.0.3",
+    "mongodb": "^2.2.34",
+    "pvjs": "^1.0.6",
     "pvserver": "^0.2.4"
   }
 }

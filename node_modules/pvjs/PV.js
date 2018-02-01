@@ -184,6 +184,12 @@ var root = (typeof window === 'undefined') ? global : window;
         }
         return htmlStr;
     };
+    root.PV.replaceAll = function(search, replace, str) {
+        if (PV.isString(str)) {
+            return str.replace(new RegExp(search,'g'),replace);
+        }
+        return str;
+    };
     root.PV.left = function(str, n) {
         if (PV.isString(str)) {
             if (n <= 0)
