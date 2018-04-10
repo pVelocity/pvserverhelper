@@ -120,7 +120,7 @@ module.exports = {
         };
     },
 
-    scriptErrHandler: function(jsapi, callback) {
+    scriptErrHandler: function(jsapi, callback, passError) {
         var fn = function(err) {
 
             this.cleanupForNonCached(jsapi);
@@ -148,23 +148,37 @@ module.exports = {
             if (err.code === 'RETURN_IMMEDIATELY' && typeof(err.callback) === 'function') {
                 err.callback();
             } else {
-                callback({
-                    'code': `${err.code}`,
-                    'message': `${err.message}`
-                }, null);
+                if (PV.isBoolean(passError) && passError) {
+                    callback(null, {
+                        'code': `${err.code}`,
+                        'message': `${err.message}`
+                    });
+                } else {
+                    callback({
+                        'code': `${err.code}`,
+                        'message': `${err.message}`
+                    }, null);
+                }
             }
         }.bind(this);
         return fn;
     },
 
-    genericErrHandler: function(jsapi, callback) {
+    genericErrHandler: function(jsapi, callback, passError) {
         var fn = function(err) {
             this.cleanupForNonCached(jsapi);
 
-            callback({
-                'code': 'JSAPI2_UNKNOWN_ERROR',
-                'message': `The function encountered an unknown error.\n${JSON.stringify(err)}\n`
-            }, null);
+            if (PV.isBoolean(passError) && passError) {
+                callback(null, {
+                    'code': 'JSAPI2_UNKNOWN_ERROR',
+                    'message': `The function encountered an unknown error.\n${JSON.stringify(err)}\n`
+                });
+            } else {
+                callback({
+                    'code': 'JSAPI2_UNKNOWN_ERROR',
+                    'message': `The function encountered an unknown error.\n${JSON.stringify(err)}\n`
+                }, null);
+            }
         }.bind(this);
         return fn;
     },
