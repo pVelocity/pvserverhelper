@@ -66,6 +66,7 @@ require('pvjs');
 ### Arrays
 - [ensureArray](docs/arrays/ensureArray.md)
 - [swapArray](docs/arrays/swapArray.md)
+- [arrayEquals](docs/arrays/arrayEquals.md)
 - [hasArraySameElements](docs/arrays/hasArraySameElements.md)
 - [sortArrayKeyValueAsc](docs/arrays/sortArrayKeyValueAsc.md)
 - [sortArrayKeyValueDesc](docs/arrays/sortArrayKeyValueDesc.md)

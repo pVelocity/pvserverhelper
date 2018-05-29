@@ -22,11 +22,11 @@
   "homepage": "https://github.com/pVelocity/pvserverhelper#readme",
   "dependencies": {
     "bluebird": "^3.5.0",
-    "csvtojson": "^1.1.7",
-    "iconv-lite": "^0.4.15",
-    "mongodb": "^2.2.34",
-    "pvjs": "^1.0.6",
+    "csvtojson": "^1.1.12",
+    "iconv-lite": "^0.4.23",
+    "mongodb": "^2.2.35",
+    "pvjs": "^1.0.7",
     "pvserver": "^0.2.4",
-    "request": "^2.85.0"
+    "request": "^2.87.0"
   }
 }
