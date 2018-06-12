@@ -1219,7 +1219,11 @@ module.exports = {
                 var category = compTerm._attrs.category;
                 if ((!objectName || (!category || category === objectName)) && compTerm.AndFilter.Filter) {
                     PV.ensureArray(compTerm.AndFilter.Filter).forEach(function(filterTerm) {
-                        var matches = regexp.exec(filterTerm);
+                        var term = filterTerm;
+                        if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')){
+                            term = filterTerm.text;
+                        }
+                        var matches = regexp.exec(term);
                         if (matches) {
                             var group = matches[1];
                             var value = matches[2];
