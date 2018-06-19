@@ -183,18 +183,19 @@ module.exports = {
         return fn;
     },
 
-    setupLogger: function(jsapi, enableConsoleInfo) {
+    setupLogger: function(jsapi, enableConsoleInfo, timeStamp) {
         if (PV.isObject(jsapi.logger) === false) {
             jsapi.logger = {
-                enableConsoleInfo: enableConsoleInfo
+                enableConsoleInfo: enableConsoleInfo,
+                timeStamp: timeStamp
             };
         }
-        jsapi.logger.info = function(message, noTimeStamp) {
+        jsapi.logger.info = function(message) {
             var timedMsg = '';
-            if (noTimeStamp) {
-                timedMsg = message;
-            } else {
+            if (jsapi.logger.timeStamp === true) {
                 timedMsg = PV.getTimeStamp() + ' - ' + message;
+            } else {
+                timedMsg = message;
             }
             if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
                 jsapi.logger.log('info', timedMsg);
@@ -212,7 +213,12 @@ module.exports = {
                 message = error.Message;
             }
 
-            var timedMsg = PV.getTimeStamp() + ' - ' + message;
+            var timedMsg = '';
+            if (jsapi.logger.timeStamp === true) {
+                timedMsg = PV.getTimeStamp() + ' - ' + message;
+            } else {
+                timedMsg = message;
+            }
             if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
                 jsapi.logger.log('error', timedMsg);
             } else {
@@ -293,7 +299,7 @@ module.exports = {
         options.url = jsapi.pv.urlScheme + '://' + jsapi.pv.hostName + ':' + jsapi.pv.hostPort + '/admin/' + operation;
 
         if (PV.isObject(params)) {
-            var args = []
+            var args = [];
             for (var paramKey in params) {
                 args.push(paramKey + '=' + params[paramKey]);
             }
@@ -1220,7 +1226,7 @@ module.exports = {
                 if ((!objectName || (!category || category === objectName)) && compTerm.AndFilter.Filter) {
                     PV.ensureArray(compTerm.AndFilter.Filter).forEach(function(filterTerm) {
                         var term = filterTerm;
-                        if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')){
+                        if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
                             term = filterTerm.text;
                         }
                         var matches = regexp.exec(term);

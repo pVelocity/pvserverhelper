@@ -2,32 +2,58 @@
 Setups a logger for logging messages.
 - `jsapi` `<Object>`
 - `enableConsoleInfo` `<Boolean>` : Optional, default is ``false``
+- `timeStamp` `<Boolean>` : Optional, default is ``false``
 
 ```js
 pvh.setupLogger(jsapi);
 ```
 
-Logger with winston.
+Logger with default winston.
 ```js
 var jsapi = {
 	logger: require('winston')
 };
 jsapi.logger.add(jsapi.logger.transports.File, {
     level: 'info',
-    filename: __dirname,
+    filename: '.\log.txt',
     maxsize: '10000000', //10MB,
     json: false,
-    timestamp: function() {
-        return new Date();
-    }
+    timestamp: new Date
 });
 pvh.setupLogger(jsapi);
 ```
 
-### ``info(message, noTimeStamp)``
+Logger with instance winston.
+```js
+var winston = require('winston')
+var jsapi = {};
+jsapi.logger = new winston.Logger({
+    transports: [new(winston.transports.File)({
+        level: 'info',
+        maxsize: '10000000', //10MB,
+        json: false,
+        timestamp: new Date,
+        filename: .\log.txt'
+    })]
+});
+pvh.setupLogger(jsapi);
+
+var jsapi2 = {};
+jsapi2.logger = new winston.Logger({
+    transports: [new(winston.transports.File)({
+        level: 'info',
+        maxsize: '10000000', //10MB,
+        json: false,
+        timestamp: new Date,
+        filename: .\log2.txt'
+    })]
+});
+pvh.setupLogger(jsapi2);
+```
+
+### ``info(message)``
 Logs a message with `INFO`.
 - `message` `<String>`
-- `noTimeStamp` `<Boolean>` : Optional, default is ``false``
 
 ```js
 jsapi.logger.info('Hello World');
