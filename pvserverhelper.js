@@ -15,7 +15,6 @@ var Converter = require('csvtojson').Converter;
 
 require('pvjs');
 
-
 module.exports = {
     sessionJsapiCache: {},
 
@@ -249,34 +248,40 @@ module.exports = {
     },
 
     convertFile: function(source, target, options, decoding, encoding) {
+        return new prom(function(resolve, reject) {
+            var rd = fs.createReadStream(source);
+            var wr = fs.createWriteStream(target);
+
+            this.convertStream(rd, wr, resolve, reject, options, decoding, encoding);
+        }.bind(this));
+    },
+
+    convertStream: function(rd, wr, successCallback, failureCallback, options, decoding, encoding) {
         var converter = null;
         if (PV.isObject(options)) {
             converter = new Converter(options);
         } else {
             converter = new Converter();
         }
-        return new prom(function(resolve, reject) {
-            var rd = fs.createReadStream(source);
-            rd.on('error', rejectCleanup);
-            var wr = fs.createWriteStream(target);
-            wr.on('error', rejectCleanup);
 
-            function rejectCleanup(err) {
-                rd.destroy();
-                wr.end();
-                reject(err);
-            }
-            wr.on('finish', resolve);
+        rd.on('error', rejectCleanup);
+        wr.on('error', rejectCleanup);
 
-            if (PV.isString(decoding) && PV.isString(encoding)) {
-                rd.pipe(iconv.decodeStream(decoding))
-                    .pipe(iconv.encodeStream(encoding))
-                    .pipe(converter)
-                    .pipe(wr);
-            } else {
-                rd.pipe(converter).pipe(wr);
-            }
-        });
+        function rejectCleanup(err) {
+            rd.destroy();
+            wr.end();
+            failureCallback(err);
+        }
+        wr.on('finish', successCallback);
+
+        if (PV.isString(decoding) && PV.isString(encoding)) {
+            rd.pipe(iconv.decodeStream(decoding))
+                .pipe(iconv.encodeStream(encoding))
+                .pipe(converter)
+                .pipe(wr);
+        } else {
+            rd.pipe(converter).pipe(wr);
+        }
     },
 
     execServlet: function(jsapi, username, password, operation, params, headers) {

@@ -61,6 +61,7 @@ var pvh = require('pvserverhelper');
 - [setupLogger](docs/Other/setupLogger.md)
 - [isEmptyValue](docs/Other/isEmptyValue.md)
 - [convertFile](docs/Other/convertFile.md)
+- [convertStream](docs/Other/convertStream.md)
 - [exec](docs/Other/exec.md)
 - [setCallbackTimeout](docs/Other/setCallbackTimeout.md)
 - [checkCallbackTimeout](docs/Other/checkCallbackTimeout.md)

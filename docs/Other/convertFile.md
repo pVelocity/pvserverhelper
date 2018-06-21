@@ -1,4 +1,4 @@
-### ``convertFile(converter, source, target, options, decoding, encoding)``
+### ``convertFile(source, target, options, decoding, encoding)``
 Converts csv to json from ``source`` to ``target`` with ``options``, ``decoding`` and ``encoding`` settings.
 See https://www.npmjs.com/package/csvtojson for options.
 - `source` `<String>`
