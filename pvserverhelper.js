@@ -252,6 +252,10 @@ module.exports = {
             var rd = fs.createReadStream(source);
             var wr = fs.createWriteStream(target);
 
+            if (PV.isObject(options) === false) {
+                options = {};
+            }
+
             this.convertStream(rd, wr, resolve, reject, options, decoding, encoding);
         }.bind(this));
     },
@@ -260,8 +264,6 @@ module.exports = {
         var converter = null;
         if (PV.isObject(options)) {
             converter = new Converter(options);
-        } else {
-            converter = new Converter();
         }
 
         rd.on('error', rejectCleanup);
@@ -275,12 +277,20 @@ module.exports = {
         wr.on('finish', successCallback);
 
         if (PV.isString(decoding) && PV.isString(encoding)) {
-            rd.pipe(iconv.decodeStream(decoding))
-                .pipe(iconv.encodeStream(encoding))
-                .pipe(converter)
-                .pipe(wr);
-        } else {
+            if (PV.isObject(options)) {
+                rd.pipe(iconv.decodeStream(decoding))
+                    .pipe(iconv.encodeStream(encoding))
+                    .pipe(converter)
+                    .pipe(wr);
+            } else {
+                rd.pipe(iconv.decodeStream(decoding))
+                    .pipe(iconv.encodeStream(encoding))
+                    .pipe(wr);
+            }
+        } else if (PV.isObject(options)) {
             rd.pipe(converter).pipe(wr);
+        } else {
+            rd.pipe(wr);
         }
     },
 

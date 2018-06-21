@@ -1,12 +1,12 @@
-### ``convertStream(readStream, writeStream, successCallback, failureCallback, options, decoding, encoding)``
-Converts the contents from the csv ``readStream`` to json ``writeStream`` with ``options``, ``decoding`` and ``encoding`` settings.
+### ``convertStream(readStream, writeStream, successCallback, failureCallback, [options], [decoding], [encoding])``
+Converts the contents from a ``readStream`` to ``writeStream``. csv to json settings can be provided with ``options``.
 - `readStream` `<Buffer>`
 - `writeStream` `<Buffer>`
 - `successCallback` `<function>`
 - `failureCallback` `<function>`
-- `options` `<Object>`
-- `decoding` `<String>`
-- `encoding` `<String>`
+- `options` `<Object>` : Optional, default is null
+- `decoding` `<String>` : Optional, default is null
+- `encoding` `<String>` : Optional, default is null
 
 ```js
 var fs = require('fs');
