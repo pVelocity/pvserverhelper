@@ -182,10 +182,9 @@ module.exports = {
         return fn;
     },
 
-    setupLogger: function(jsapi, enableConsoleInfo, timeStamp) {
+    setupLogger: function(jsapi, timeStamp) {
         if (PV.isObject(jsapi.logger) === false) {
             jsapi.logger = {
-                enableConsoleInfo: enableConsoleInfo,
                 timeStamp: timeStamp
             };
         }
@@ -198,10 +197,10 @@ module.exports = {
             }
             if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
                 jsapi.logger.log('info', timedMsg);
+            } else if (PV.isFunction(jsapi.log)) {
+                jsapi.log('info', timedMsg);
             } else {
-                if (jsapi.logger.enableConsoleInfo === true) {
-                    console.log('INFO: ' + timedMsg);
-                }
+                console.log('INFO: ' + timedMsg);
             }
         };
         jsapi.logger.error = function(error, throwError) {
@@ -220,6 +219,8 @@ module.exports = {
             }
             if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
                 jsapi.logger.log('error', timedMsg);
+            } else if (PV.isFunction(jsapi.log)) {
+                jsapi.log('error', timedMsg);
             } else {
                 console.log('ERROR: ' + timedMsg);
             }
@@ -241,6 +242,8 @@ module.exports = {
             timedMsg = timedMsg + ' - ElaspedTime: ' + elapsedTime + 's';
             if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
                 jsapi.logger.log('TIMER', timedMsg);
+            } else if (PV.isFunction(jsapi.log)) {
+                jsapi.log('error', timedMsg);
             } else {
                 console.log('TIMER: ' + timedMsg);
             }

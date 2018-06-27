@@ -1,7 +1,6 @@
-### ``setupLogger(jsapi, [enableConsoleInfo])``
+### ``setupLogger(jsapi, [timeStamp])``
 Setups a logger for logging messages.
 - `jsapi` `<Object>`
-- `enableConsoleInfo` `<Boolean>` : Optional, default is ``false``
 - `timeStamp` `<Boolean>` : Optional, default is ``false``
 
 ```js
