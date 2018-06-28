@@ -893,9 +893,28 @@ module.exports = {
         }
 
         try {
-            var connectionInfo = jsapi.PVSession.engineSessionInfo.providerModelsByTag[tag];
-            for (var prop in connectionInfo) {
-                jsapi[infoTag][prop] = connectionInfo[prop];
+            var providerModelInfo = jsapi.PVSession.engineSessionInfo.providerModelsByTag[tag];
+            var connectionInfo = null;
+            if (PV.isArray(providerModelInfo)) {
+                var userId = params.userId;
+                var appName = params.appName;
+                var mongoDBHostName = params.mongoDBHostName;
+                if (PV.isString(userId) && PV.isString(appName) && PV.isString(mongoDBHostName)) {
+                    for (var i = 0; i < providerModelInfo.length; i++) {
+                        if (providerModelInfo[i].userId === userId && providerModelInfo[i].appName === appName &&
+                            providerModelInfo[i].mongoDBHostName === mongoDBHostName) {
+                            connectionInfo = providerModelInfo[i];
+                        }
+                    }
+                }
+            } else if (PV.isObject(providerModelInfo)) {
+                connectionInfo = providerModelInfo;
+            }
+
+            if (PV.isObject(connectionInfo)) {
+                for (var prop in connectionInfo) {
+                    jsapi[infoTag][prop] = connectionInfo[prop];
+                }
             }
             jsapi.logger.info(infoTag + ' Engine Session Info');
         } catch (e1) {
