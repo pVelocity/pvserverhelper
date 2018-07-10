@@ -1281,6 +1281,56 @@ module.exports = {
         return result;
     },
 
+    getLastComponentSelections: function(components) {
+        var comps = PV.ensureArray(components);
+
+        var lastSelections = null;
+        for (var i = comps.length - 1; i >= 0; i--) {
+            var component = comps[i];
+
+            if (PV.isObject(component) && component.hasOwnProperty('Selection')) {
+                var selections = [];
+                if (PV.isArray(component.Selection)) {
+                    selections = component.Selection;
+                } else {
+                    selections.push(component.Selection);
+                }
+                lastSelections = selections;
+                break;
+            }
+        }
+        return lastSelections;
+    },
+
+    getGroupValueFromGroupFilters: function(selections, groupName) {
+        var values = [];
+        var groupFilter = null;
+        if (PV.isArray(selections)) {
+            for (var i = 0; i < selections.length; i++) {
+                if (PV.isObject(selections[i]) && selections[i].hasOwnProperty('GroupFilter')) {
+                    groupFilter = selections[i].GroupFilter;
+                    var filters = [];
+                    if (PV.isArray(groupFilter)) {
+                        filters = groupFilter;
+                    } else {
+                        filters.push(groupFilter);
+                    }
+                    for (var j = 0; j < filters.length; j++) {
+                        groupFilter = filters[j];
+                        if (PV.isString(groupFilter.Group) && PV.isString(groupFilter.Value) && groupFilter.Group === groupName) {
+                            values.push(groupFilter.Value);
+                        }
+                    }
+                }
+            }
+        }
+        if (values.length > 0) {
+            return values;
+        } else {
+            return null;
+        }
+    },
+
     getPVStatus: function(response) {
         var PVStatus = null;
 
