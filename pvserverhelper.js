@@ -632,7 +632,8 @@ module.exports = {
                 bulk.find(filter2).update({
                     $rename: rename
                 });
-
+            }
+            if (bulk.length > 0) {
                 promises.push(this.bulkExecute(bulk));
             }
             return prom.all(promises);
