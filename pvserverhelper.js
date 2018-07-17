@@ -1,4 +1,4 @@
-/*global PV*/
+/*global PV, emit*/
 'use strict';
 
 /* jshint strict: true */
@@ -729,11 +729,26 @@ module.exports = {
         }.bind(this));
     },
 
+    getProperties: function(jsapi, collectionName) {
+        var mapFunction = function() {
+            for (var key in this) {
+                emit(key, null);
+            }
+        };
+        var reduceFunction = function(key, stuff) {
+            return null;
+        };
+        var out = { out: { 'inline': 1 } };
+        return jsapi.mongoConn.collection(collectionName).mapReduceAsync(mapFunction, reduceFunction, out).map(function(i) {
+            return i._id;
+        });
+    },
+
     getAggregateProjectMapping: function(jsapi, collectionName, filter) {
         if (PV.isObject(filter) === false) {
             filter = {};
         }
-        return jsapi.mongoConn.collection(collectionName).findOneAsync(filter).then(function(result) {
+        return this.getProperties(jsapi, collectionName).then(function(result) {
             return this.createExpressionMapping(result);
         }.bind(this));
     },
