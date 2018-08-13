@@ -27,6 +27,7 @@ var pvh = require('pvserverhelper');
 - [getEntityGroupsAndFields](docs/pvserver/getEntityGroupsAndFields.md)
 - [convertGroupOrFieldArrayForQueryParams](docs/pvserver/convertGroupOrFieldArrayForQueryParams.md)
 - [removeEntityRelationshipGroupAndFields](docs/pvserver/removeEntityRelationshipGroupAndFields.md)
+- [getGroupsOrFieldsFromQueryParams](docs/pvserver/getGroupsOrFieldsFromQueryParams.md)
 - [getGroupValueFromQueryParams](docs/pvserver/getGroupValueFromQueryParams.md)
 - [getLastComponentSelections](docs/pvserver/getLastComponentSelections.md)
 - [getGroupValueFromGroupFilters](docs/pvserver/getGroupValueFromGroupFilters.md)

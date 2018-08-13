@@ -1269,6 +1269,33 @@ module.exports = {
         });
     },
 
+    getGroupsOrFieldsFromQueryParams: function(groupsOrFieldsParams) {
+        var groupsOrFields = [];
+        if (PV.isObject(groupsOrFieldsParams)) {
+            var values = null;
+            if (groupsOrFieldsParams.hasOwnProperty('Group')) {
+                values = PV.ensureArray(groupsOrFieldsParams.Group);
+            } else if (groupsOrFieldsParams.hasOwnProperty('Field')) {
+                values = PV.ensureArray(groupsOrFieldsParams.Field);
+            }
+
+            if (PV.isArray(values) && values.length > 0) {
+                values.forEach(function(value) {
+                    if (PV.isString(value)) {
+                        groupsOrFields.push(value);
+                    } else if (PV.isObject(value)) {
+                        if (PV.isString(value._text)) {
+                            groupsOrFields.push(value._text);
+                        } else if (PV.isString(value.text)) {
+                            groupsOrFields.push(value.text);
+                        }
+                    }
+                });
+            }
+        }
+        return groupsOrFields;
+    },
+
     getGroupValueFromQueryParams: function(queryParams, objectName, groupName) {
         var result = null;
         var regexp = /^([^=]+)=[']([^']+)[']$/i;
