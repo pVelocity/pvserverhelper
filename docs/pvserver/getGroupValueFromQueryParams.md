@@ -1,5 +1,5 @@
 ### ``getGroupValueFromQueryParams(queryParams, objectName, groupName)``
-Return the group value from the parameters of a RPM API Query for ``objectName``'s ``groupName``.
+Return the last group value from the parameters of a RPM API Query for ``objectName``'s ``groupName``.
 - `queryParams` `<Object>`
 - `objectName` `<String>`
 - `groupName` `<String>`

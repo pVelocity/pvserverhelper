@@ -1324,6 +1324,34 @@ module.exports = {
         return result;
     },
 
+    getGroupValuesFromQueryParams: function(queryParams, objectName, groupName) {
+        var result = [];
+        var regexp = /^([^=]+)=[']([^']+)[']$/i;
+        try {
+            var dp = queryParams.AndFilter;
+            PV.ensureArray(dp.OrFilter).forEach(function(compTerm) {
+                var category = compTerm._attrs.category;
+                if ((!objectName || (!category || category === objectName)) && compTerm.AndFilter.Filter) {
+                    PV.ensureArray(compTerm.AndFilter.Filter).forEach(function(filterTerm) {
+                        var term = filterTerm;
+                        if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
+                            term = filterTerm.text;
+                        }
+                        var matches = regexp.exec(term);
+                        if (matches) {
+                            var group = matches[1];
+                            var value = matches[2];
+                            if (group === groupName && value !== '[object Object]') {
+                                result.push(value);
+                            }
+                        }
+                    });
+                }
+            });
+        } catch (ignore) {}
+        return result;
+    },
+
     getLastComponentSelections: function(components) {
         var comps = PV.ensureArray(components);
 
