@@ -12,6 +12,7 @@ var mongodb = require('mongodb');
 var pvserver = require('pvserver');
 var request = require('request');
 var Converter = require('csvtojson').Converter;
+var path = require('path');
 
 require('pvjs');
 
@@ -1493,5 +1494,27 @@ module.exports = {
             }
         }
         return result;
+    },
+    listFiles: function(dir, conditionFunc) {
+        var files = [];
+        if (fs.existsSync(dir)) {
+            var tempList = fs.readdirSync(dir);
+            for (var i = 0; i < tempList.length; i++) {
+                var filePath = path.join(dir, tempList[i]);
+                if (fs.lstatSync(filePath).isDirectory()) {
+                    var subList = this.listFiles(filePath, conditionFunc);
+                    files = files.concat(subList);
+                } else {
+                    if (PV.isFunction(conditionFunc)) {
+                        if (conditionFunc(filePath)) {
+                            files.push(filePath);
+                        }
+                    } else {
+                        files.push(filePath);
+                    }
+                }
+            }
+        }
+        return files;
     }
 };

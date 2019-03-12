@@ -63,6 +63,7 @@ var pvh = require('pvserverhelper');
 - [isBulkUpsertInProgress](docs/PVStatus/isBulkUpsertInProgress.md)
 
 ### Other
+- [listFiles](docs/Other/listFiles.md)
 - [setupLogger](docs/Other/setupLogger.md)
 - [isEmptyValue](docs/Other/isEmptyValue.md)
 - [convertFile](docs/Other/convertFile.md)
