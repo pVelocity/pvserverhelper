@@ -473,6 +473,7 @@ module.exports = {
     // lookupKey: fields in lookupCollectionName used $project to construct a key that matches sourceKey
     // defaultValue: a $set value used to set a default for the lookupField
     // rename: field that the lookup will be set to, defaulted to lookupField
+    // tag: field that will be tagged true if lookup applied
     // var lookupInfo = {
     //     'lookupField': {
     //         sourceKey: 'sourceKey',
@@ -482,7 +483,8 @@ module.exports = {
     //             }
     //         },
     //         defaultValue: 'defaultValue',
-    //         rename: 'rename'
+    //         rename: 'rename',
+    //         tag: 'tag'
     //     }
     // };
     aggregateLookup: function(jsapi, sourceCollectionName, lookupCollectionName, lookupInfo, lookupOperations) {
@@ -630,9 +632,16 @@ module.exports = {
                 filter2[lookupFieldKey] = {
                     $exists: true
                 };
-                bulk.find(filter2).update({
+
+                var update = {
                     $rename: rename
-                });
+                };
+                if (PV.isString(lookup.tag)) {
+                    var set = {};
+                    set[lookup.tag] = true;
+                    update.$set = set;
+                }
+                bulk.find(filter2).update(update);
             }
             if (bulk.length > 0) {
                 promises.push(this.bulkExecute(bulk));

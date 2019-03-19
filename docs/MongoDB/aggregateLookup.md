@@ -14,7 +14,8 @@ var lookupInfo = {
             }
         },
         defaultValue: 'defaultValue',
-        rename: 'rename'
+        rename: 'rename',
+        tag: 'tag'
     }
 };
 ```
@@ -24,6 +25,7 @@ sourceKey: field in sourceCollectionName used as a key to match with lookupColle
 lookupKey: fields in lookupCollectionName used $project to construct a key that matches sourceKey
 defaultValue: a $set value used to set a default for the lookupField
 rename: field that the lookup will be set to, defaulted to lookupField
+tag: field that will be tagged true if lookup applied
 ```
 - `lookupOperations` `<Object>`: provides any additional pipeline operations to filter by
 
