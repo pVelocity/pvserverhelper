@@ -1313,20 +1313,22 @@ module.exports = {
             var dp = queryParams.AndFilter;
             PV.ensureArray(dp.OrFilter).forEach(function(compTerm) {
                 var category = compTerm._attrs.category;
-                if ((!objectName || (!category || category === objectName)) && compTerm.AndFilter.Filter) {
-                    PV.ensureArray(compTerm.AndFilter.Filter).forEach(function(filterTerm) {
-                        var term = filterTerm;
-                        if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
-                            term = filterTerm.text;
-                        }
-                        var matches = regexp.exec(term);
-                        if (matches) {
-                            var group = matches[1];
-                            var value = matches[2];
-                            if (group === groupName && value !== '[object Object]') {
-                                result = value;
+                if ((!objectName || (!category || category === objectName))) {
+                    PV.ensureArray(compTerm.AndFilter).forEach(function(andTerm) {
+                        PV.ensureArray(andTerm.Filter).forEach(function(filterTerm) {
+                            var term = filterTerm;
+                            if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
+                                term = filterTerm.text;
                             }
-                        }
+                            var matches = regexp.exec(term);
+                            if (matches) {
+                                var group = matches[1];
+                                var value = matches[2];
+                                if (group === groupName && value !== '[object Object]') {
+                                    result = value;
+                                }
+                            }
+                        });
                     });
                 }
             });
@@ -1341,20 +1343,22 @@ module.exports = {
             var dp = queryParams.AndFilter;
             PV.ensureArray(dp.OrFilter).forEach(function(compTerm) {
                 var category = compTerm._attrs.category;
-                if ((!objectName || (!category || category === objectName)) && compTerm.AndFilter.Filter) {
-                    PV.ensureArray(compTerm.AndFilter.Filter).forEach(function(filterTerm) {
-                        var term = filterTerm;
-                        if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
-                            term = filterTerm.text;
-                        }
-                        var matches = regexp.exec(term);
-                        if (matches) {
-                            var group = matches[1];
-                            var value = matches[2];
-                            if (group === groupName && value !== '[object Object]') {
-                                result.push(value);
+                if ((!objectName || (!category || category === objectName))) {
+                    PV.ensureArray(compTerm.AndFilter).forEach(function(andTerm) {
+                        PV.ensureArray(andTerm.Filter).forEach(function(filterTerm) {
+                            var term = filterTerm;
+                            if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
+                                term = filterTerm.text;
                             }
-                        }
+                            var matches = regexp.exec(term);
+                            if (matches) {
+                                var group = matches[1];
+                                var value = matches[2];
+                                if (group === groupName && value !== '[object Object]') {
+                                    result.push(value);
+                                }
+                            }
+                        });
                     });
                 }
             });
