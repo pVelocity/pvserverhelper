@@ -1215,21 +1215,31 @@ module.exports = {
         var uniqueArr = arr.filter(function(elem, index, self) {
             if (PV.isString(elem)) {
                 return index === self.indexOf(elem);
+            } else if (PV.isObject(elem) && PV.isString(elem.text) && PV.isString(elem.attrs)) {
+                return true;
             } else {
                 return false;
             }
         });
+
         var newArray = [];
-        uniqueArr.forEach(function(field) {
-            if (PV.isString(field)) {
+        uniqueArr.forEach(function(elem) {
+            if (PV.isString(elem)) {
                 newArray.push({
                     '_attrs': {
                         'name': 'Res1'
                     },
-                    '_text': field
+                    '_text': elem
+                });
+            } else {
+                newArray.push({
+                    '_attrs': {
+                        'name': elem.attrs
+                    },
+                    '_text': elem.text
                 });
             }
-        });
+        }.bind(this));
         return newArray;
     },
 
