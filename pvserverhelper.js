@@ -919,16 +919,21 @@ module.exports = {
         }
 
         try {
-            var providerModelInfo = jsapi.PVSession.engineSessionInfo.providerModelsByTag[tag];
+            var sessionInfo = jsapi.PVSession.engineSessionInfo;
+            var providerModelInfo = sessionInfo.providerModelsByTag[tag];
             var connectionInfo = null;
             if (PV.isArray(providerModelInfo)) {
-                var userId = params.userId;
+                var userId = (params.userId ? params.userId : sessionInfo.user);
                 var appName = params.appName;
                 var mongoDBHostName = params.mongoDBHostName;
-                if (PV.isString(userId) && PV.isString(appName) && PV.isString(mongoDBHostName)) {
+                var providerModelId = sessionInfo.providerModelId;
+                if (PV.isString(userId) && (
+                    (PV.isString(appName) && PV.isString(mongoDBHostName)) ||
+                    (PV.isString(providerModelId)))) {
                     for (var i = 0; i < providerModelInfo.length; i++) {
-                        if (providerModelInfo[i].userId === userId && providerModelInfo[i].appName === appName &&
-                            providerModelInfo[i].mongoDBHostName === mongoDBHostName) {
+                        if (providerModelInfo[i].userId === userId && (
+                            (providerModelInfo[i].appName === appName && providerModelInfo[i].mongoDBHostName === mongoDBHostName) ||
+                            (providerModelInfo[i].modelId === providerModelId))) {
                             connectionInfo = providerModelInfo[i];
                         }
                     }
