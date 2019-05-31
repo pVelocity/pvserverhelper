@@ -1,13 +1,13 @@
-### ``createMongoProviderModel(jsapi, username, appName, dbHostName, [options])``
-'Creates provider model with ``username`` for ``appName`` accessing ``dbHostName``.
+### ``createMongoProviderModel(jsapi, username, appName, dataSetId, [options])``
+'Creates provider model with ``username`` for ``appName`` accessing ``dataSetId``. If ``dataSetId`` is the dbHostName instead, it will attempt as dataSetId first, then dbHostName.
 - `jsapi` `<Object>`
 - `username` `<String>`
 - `appName` `<String>`
-- `dbHostName` `<String>`
+- `dataSetId` `<String>`
 - `options` `<Object>`
 
 ```js
-pvh.createMongoProviderModel(jsapi, 'admin@test.com', 'CRM', 'mongoDB_local', {
+pvh.createMongoProviderModel(jsapi, 'admin@test.com', 'CRM', 'crm', {
     socketTimeoutMS: 600000
 });
 ```

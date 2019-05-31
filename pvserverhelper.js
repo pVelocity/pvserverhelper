@@ -992,7 +992,7 @@ module.exports = {
         }.bind(this));
     },
 
-    createMongoProviderModel: function(jsapi, username, appName, dbHostName, options) {
+    createMongoProviderModel: function(jsapi, username, appName, dataSetId, options) {
         return new prom(function(resolve, reject) {
             if (PV.isObject(jsapi.mongo) === false) {
                 jsapi.mongo = {};
@@ -1002,6 +1002,8 @@ module.exports = {
                 jsapi.logger.info('Provider model id already already exist');
                 resolve(this.getProviderModelUrl(jsapi, options));
             } else {
+                jsapi.logger.info('Creating provider model with ' + username + ' for ' + appName + ' accessing dataSetId ' + dataSetId);
+
                 var dataSetQuery = {
                     'Type': 'MongoDB',
                     'KeyValue': [{
@@ -1011,23 +1013,43 @@ module.exports = {
                         'Key': 'appName',
                         'Value': appName
                     }, {
-                        'Key': 'mongoDBHostName',
-                        'Value': dbHostName
+                        'Key': 'dataSetId',
+                        'Value': dataSetId
                     }]
                 };
-
-                jsapi.logger.info('Creating provider model with ' + username + ' for ' + appName + ' accessing ' + dbHostName);
                 return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-                    if (this.isResultOk(resp)) {
+                    var status = this.getPVStatus(resp);
+                    jsapi.mongo.modelId = status.ModelId;
+                    jsapi.logger.info('Getting provider model url with ' + status.ModelId);
+                    resolve(this.getProviderModelUrl(jsapi, options));
+                }.bind(this)).catch(function(e) {
+                    jsapi.logger.error(this.getPVStatus(e.json), false);
+                    jsapi.logger.info('Failed to get provider model url with dataSetId ' + dataSetId);
+
+                    var dataSetQuery = {
+                        'Type': 'MongoDB',
+                        'KeyValue': [{
+                            'Key': 'userId',
+                            'Value': username
+                        }, {
+                            'Key': 'appName',
+                            'Value': appName
+                        }, {
+                            'Key': 'mongoDBHostName',
+                            'Value': dataSetId
+                        }]
+                    };
+                    jsapi.logger.info('Attempting with ' + username + ' for ' + appName + ' accessing mongoDBHostName ' + dataSetId);
+                    return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
                         var status = this.getPVStatus(resp);
                         jsapi.mongo.modelId = status.ModelId;
                         jsapi.logger.info('Getting provider model url with ' + status.ModelId);
                         resolve(this.getProviderModelUrl(jsapi, options));
-                    } else {
+                    }.bind(this)).catch(function(e) {
                         jsapi.mongo.modelId = null;
-                        jsapi.logger.error(this.getPVStatus(resp));
+                        jsapi.logger.error(this.getPVStatus(e.json));
                         resolve(false);
-                    }
+                    }.bind(this));
                 }.bind(this));
             }
         }.bind(this));
