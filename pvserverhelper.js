@@ -1003,7 +1003,7 @@ module.exports = {
             }]
         };
         jsapi.logger.info('Creating provider model with ' + access_token + ' on ' + instance_url);
-        return jsapi.pv.sendRequest('CreateProviderModel', null).then(function(resp) {
+        return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
                 var status = this.getPVStatus(resp);
                 jsapi.sfdc.modelId = status.ModelId;
                 return true;
