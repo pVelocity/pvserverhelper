@@ -876,14 +876,14 @@ module.exports = {
                 jsapi.pv = new pvserver.PVServerAPI(jsapi.PVSession.engineSessionInfo.url);
                 jsapi.pv.login(null, null, jsapi.PVSession.engineSessionInfo.apiKey).then(function(resp) {
                     resolve(true);
-                });
+                }).catch(function(err) {
+                    jsapi.logger.error(this.getPVStatus(err.json));
+                    resolve(false);
+                }.bind(this));
             } else {
                 resolve(true);
             }
-        }.bind(this)).catch(function(err) {
-            jsapi.logger.error(this.getPVStatus(err.json));
-            return false;
-        }.bind(this));
+        }.bind(this))
     },
 
     parseProviderModelUrl: function(url) {
