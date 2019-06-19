@@ -1007,7 +1007,7 @@ module.exports = {
                 var status = this.getPVStatus(resp);
                 jsapi.sfdc.modelId = status.ModelId;
                 return true;
-        }).catch(function(err) {
+        }.bind(this)).catch(function(err) {
             jsapi.logger.error(this.getPVStatus(err.json));
             return false;
         }.bind(this));
