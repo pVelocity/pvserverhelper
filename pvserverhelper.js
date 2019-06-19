@@ -835,16 +835,38 @@ module.exports = {
         }
     },
 
-    login: function(jsapi, protocol, host, port, username, password) {
+    login: function(jsapi, protocol, host, port, username, password, sessionContext) {
         jsapi.logger.info('Logging in ' + protocol + '://' + host + ':' + port);
         jsapi.pv = new pvserver.PVServerAPI(protocol + '://' + host + ':' + port);
-        return jsapi.pv.login(username, password, null).then(function(resp) {
-            if (this.isResultOk(resp)) {
-                return true;
-            } else {
-                jsapi.logger.error(this.getPVStatus(resp));
-                return false;
+
+        let params = {
+            User: username,
+            Password: password,
+            TimeOut: jsapi.pv.timeOut,
+            DeviceName: jsapi.pv.device
+        }
+
+        if (PV.isObject(sessionContext)) {
+            params.SessionContext = [];
+            for (let key in sessionContext) {
+                params.SessionContext.push({
+                    Property: {
+                        '_attrs': {
+                            'key': key
+                        },
+                        Value: sessionContext[key]
+                    }
+                });
             }
+        }
+
+        return jsapi.pv.sendRequest('Login', params).then(function(json) {
+            jsapi.pv.user = json.PVResponse.PVStatus.User;
+            jsapi.pv.role = json.PVResponse.PVStatus.UserGroup;
+            return true;
+        }).catch(function(err) {
+            jsapi.logger.error(this.getPVStatus(err.json));
+            return false;
         }.bind(this));
     },
 
@@ -853,17 +875,14 @@ module.exports = {
             if (PV.isObject(jsapi.pv) === false) {
                 jsapi.pv = new pvserver.PVServerAPI(jsapi.PVSession.engineSessionInfo.url);
                 jsapi.pv.login(null, null, jsapi.PVSession.engineSessionInfo.apiKey).then(function(resp) {
-                    if (this.isResultOk(resp)) {
-                        resolve(true);
-                    } else {
-                        jsapi.pv = null;
-                        jsapi.logger.error(this.getPVStatus(resp));
-                        resolve(false);
-                    }
-                }.bind(this));
+                    resolve(true);
+                });
             } else {
                 resolve(true);
             }
+        }.bind(this)).catch(function(err) {
+            jsapi.logger.error(this.getPVStatus(err.json));
+            return false;
         }.bind(this));
     },
 
@@ -980,15 +999,13 @@ module.exports = {
             }]
         };
         jsapi.logger.info('Creating provider model with ' + access_token + ' on ' + instance_url);
-        return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-            if (this.isResultOk(resp)) {
+        return jsapi.pv.sendRequest('CreateProviderModel', null).then(function(resp) {
                 var status = this.getPVStatus(resp);
                 jsapi.sfdc.modelId = status.ModelId;
-            } else {
-                jsapi.sfdc.modelId = null;
-                jsapi.logger.error(this.getPVStatus(resp));
-                return false;
-            }
+                return true;
+        }).catch(function(err) {
+            jsapi.logger.error(this.getPVStatus(err.json));
+            return false;
         }.bind(this));
     },
 
@@ -1022,8 +1039,8 @@ module.exports = {
                     jsapi.mongo.modelId = status.ModelId;
                     jsapi.logger.info('Getting provider model url with ' + status.ModelId);
                     resolve(this.getProviderModelUrl(jsapi, options));
-                }.bind(this)).catch(function(e) {
-                    jsapi.logger.error(this.getPVStatus(e.json), false);
+                }.bind(this)).catch(function(err) {
+                    jsapi.logger.error(this.getPVStatus(err.json), false);
                     jsapi.logger.info('Failed to get provider model url with dataSetId ' + dataSetId);
 
                     var dataSetQuery = {
@@ -1045,9 +1062,8 @@ module.exports = {
                         jsapi.mongo.modelId = status.ModelId;
                         jsapi.logger.info('Getting provider model url with ' + status.ModelId);
                         resolve(this.getProviderModelUrl(jsapi, options));
-                    }.bind(this)).catch(function(e) {
-                        jsapi.mongo.modelId = null;
-                        jsapi.logger.error(this.getPVStatus(e.json));
+                    }.bind(this)).catch(function(err) {
+                        jsapi.logger.error(this.getPVStatus(err.json));
                         resolve(false);
                     }.bind(this));
                 }.bind(this));
@@ -1064,60 +1080,58 @@ module.exports = {
                 return jsapi.pv.sendRequest('GetProviderModelUrl', {
                     'ProfitModel': jsapi.mongo.modelId
                 }).then(function(resp) {
-                    if (this.isResultOk(resp)) {
-                        var status = this.getPVStatus(resp);
-                        var info = this.parseProviderModelUrl(status.Url);
+                    var status = this.getPVStatus(resp);
+                    var info = this.parseProviderModelUrl(status.Url);
 
-                        jsapi.mongo.host = info.host;
-                        jsapi.mongo.dbname = info.dbname;
+                    jsapi.mongo.host = info.host;
+                    jsapi.mongo.dbname = info.dbname;
 
-                        var optionsStr = PV.convertObjectToStr(options);
-                        if (optionsStr !== '') {
-                            if (status.Url.indexOf('?') === -1) {
-                                optionsStr = '?' + optionsStr;
-                            } else {
-                                optionsStr = '&' + optionsStr;
-                            }
+                    var optionsStr = PV.convertObjectToStr(options);
+                    if (optionsStr !== '') {
+                        if (status.Url.indexOf('?') === -1) {
+                            optionsStr = '?' + optionsStr;
+                        } else {
+                            optionsStr = '&' + optionsStr;
                         }
-                        jsapi.mongo.url = status.Url + optionsStr;
+                    }
+                    jsapi.mongo.url = status.Url + optionsStr;
 
-                        if (PV.isObject(info.options)) {
-                            jsapi.mongo.options = info.options;
-                        } else {
-                            jsapi.mongo.options = null;
-                        }
-                        if (PV.isString(info.username)) {
-                            jsapi.mongo.username = info.username;
-                        } else {
-                            jsapi.mongo.username = null;
-                        }
-                        if (PV.isString(info.password)) {
-                            jsapi.mongo.password = info.password;
-                        } else {
-                            jsapi.mongo.password = null;
-                        }
-
-                        if (PV.isString(info.host) && PV.isString(info.dbname)) {
-                            jsapi.logger.info('Mongo Host: ' + jsapi.mongo.host);
-                            jsapi.logger.info('Mongo Database: ' + jsapi.mongo.dbname);
-                            resolve(true);
-                        } else {
-                            jsapi.logger.error({
-                                message: 'Unable to extract Mongo host from data source url',
-                                code: 'Parsing Error'
-                            });
-                            resolve(false);
-                        }
+                    if (PV.isObject(info.options)) {
+                        jsapi.mongo.options = info.options;
                     } else {
-                        jsapi.mongo.url = null;
-                        jsapi.mongo.host = null;
-                        jsapi.mongo.dbname = null;
                         jsapi.mongo.options = null;
+                    }
+                    if (PV.isString(info.username)) {
+                        jsapi.mongo.username = info.username;
+                    } else {
                         jsapi.mongo.username = null;
+                    }
+                    if (PV.isString(info.password)) {
+                        jsapi.mongo.password = info.password;
+                    } else {
                         jsapi.mongo.password = null;
-                        jsapi.logger.error(this.getPVStatus(resp));
+                    }
+
+                    if (PV.isString(info.host) && PV.isString(info.dbname)) {
+                        jsapi.logger.info('Mongo Host: ' + jsapi.mongo.host);
+                        jsapi.logger.info('Mongo Database: ' + jsapi.mongo.dbname);
+                        resolve(true);
+                    } else {
+                        jsapi.logger.error({
+                            message: 'Unable to extract Mongo host from data source url',
+                            code: 'Parsing Error'
+                        });
                         resolve(false);
                     }
+                }.bind(this)).catch(function(err) {
+                    jsapi.mongo.url = null;
+                    jsapi.mongo.host = null;
+                    jsapi.mongo.dbname = null;
+                    jsapi.mongo.options = null;
+                    jsapi.mongo.username = null;
+                    jsapi.mongo.password = null;
+                    jsapi.logger.error(this.getPVStatus(err.json));
+                    resolve(false);
                 }.bind(this));
             }
         }.bind(this));
@@ -1456,8 +1470,12 @@ module.exports = {
     getPVStatus: function(response) {
         var PVStatus = null;
 
-        if (response) {
-            PVStatus = response.PVResponse.PVStatus;
+        if (PV.isObject(response)) {
+            if (PV.isObject(response.PVResponse.PVStatus)) {
+                PVStatus = response.PVResponse.PVStatus;
+            } else if (PV.isObject(response.PVResponse.OpResponse) && PV.isObject(response.PVResponse.OpResponse.PVStatus)) {
+                PVStatus = response.PVResponse.OpResponse.PVStatus;
+            }
         }
 
         return PVStatus;
