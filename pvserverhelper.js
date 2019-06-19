@@ -847,15 +847,15 @@ module.exports = {
         }
 
         if (PV.isObject(sessionContext)) {
-            params.SessionContext = [];
+            params.SessionContext = {
+                Property: []
+            };
             for (let key in sessionContext) {
-                params.SessionContext.push({
-                    Property: {
-                        '_attrs': {
-                            'key': key
-                        },
-                        Value: sessionContext[key]
-                    }
+                params.SessionContext.Property.push({
+                    '_attrs': {
+                        'key': key
+                    },
+                    Value: sessionContext[key]
                 });
             }
         }
