@@ -865,7 +865,11 @@ module.exports = {
             jsapi.pv.role = json.PVResponse.PVStatus.UserGroup;
             return true;
         }).catch(function(err) {
-            jsapi.logger.error(this.getPVStatus(err.json));
+            if (PV.isObject(err.json)) {
+                jsapi.logger.error(this.getPVStatus(err.json));
+            } else {
+                jsapi.logger.error(err);
+            }
             return false;
         }.bind(this));
     },
