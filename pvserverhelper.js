@@ -988,7 +988,7 @@ module.exports = {
         return PV.isString(jsapi[infoTag].modelId);
     },
 
-    createSalesforceProviderModel: function(jsapi, access_token, instance_url) {
+    createSalesforceProviderModel: function(jsapi, access_token, instance_url, dataSetId) {
         if (PV.isObject(jsapi.sfdc) === false) {
             jsapi.sfdc = {};
         }
@@ -1002,7 +1002,15 @@ module.exports = {
                 'Value': instance_url
             }]
         };
-        jsapi.logger.info('Creating provider model with ' + access_token + ' on ' + instance_url);
+
+        if (PV.isString(dataSetId)) {
+            dataSetQuery.KeyValue.push({
+                'Key': 'dataSetId',
+                'Value': dataSetId
+            })
+        }
+
+        jsapi.logger.info('Creating provider model with ' + access_token + ' on ' + instance_url + ' with ' + dataSetId);
         return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
                 var status = this.getPVStatus(resp);
                 jsapi.sfdc.modelId = status.ModelId;
