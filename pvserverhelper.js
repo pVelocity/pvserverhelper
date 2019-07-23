@@ -822,14 +822,14 @@ module.exports = {
 
     setCallbackTimeout: function(key, timeout, callback) {
         if (PV.isString(key)) {
-            if (callbackTimeouts.hasOwnProperty(key)) {
-                clearTimeout(callbackTimeouts[key]);
+            if (this.callbackTimeouts.hasOwnProperty(key)) {
+                clearTimeout(this.callbackTimeouts[key]);
             }
-            callbackTimeouts[key] = setTimeout(function() {
-                clearTimeout(callbackTimeouts[key]);
-                delete callbackTimeouts[key];
+            this.callbackTimeouts[key] = setTimeout(function() {
+                clearTimeout(this.callbackTimeouts[key]);
+                delete this.callbackTimeouts[key];
                 callback(null, null);
-            }, timeout);
+            }.bind(this), timeout);
         } else {
             setTimeout(function() {
                 if (key.callbackTracker !== true) {
@@ -842,9 +842,9 @@ module.exports = {
 
     checkCallbackTimeout: function(key, callback) {
         if (PV.isString(key)) {
-            if (callbackTimeouts.hasOwnProperty(key)) {
-                clearTimeout(callbackTimeouts[key]);
-                delete callbackTimeouts[key];
+            if (this.callbackTimeouts.hasOwnProperty(key)) {
+                clearTimeout(this.callbackTimeouts[key]);
+                delete this.callbackTimeouts[key];
                 callback(null, null);
             }
         } else {
