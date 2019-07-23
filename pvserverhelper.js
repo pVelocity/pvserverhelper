@@ -18,6 +18,7 @@ require('pvjs');
 
 module.exports = {
     sessionJsapiCache: {},
+    callbackTimeouts: {},
 
     addOrGetSessionJsapiObject: function(jsapi, sessionId) {
         if (this.sessionJsapiCache.hasOwnProperty(sessionId)) {
@@ -819,19 +820,38 @@ module.exports = {
             (PV.isString(value) && value.trim().length === 0);
     },
 
-    setCallbackTimeout: function(jsapi, timeout, callback) {
-        setTimeout(function() {
-            if (jsapi.callbackTracker !== true) {
-                jsapi.callbackTracker = true;
-                callback(null, null);
+    setCallbackTimeout: function(key, timeout, callback) {
+        if (PV.isString(key)) {
+            if (callbackTimeouts.hasOwnProperty(key)) {
+                clearTimeout(callbackTimeouts[key]);
             }
-        }, timeout);
+            callbackTimeouts[key] = setTimeout(function() {
+                clearTimeout(callbackTimeouts[key]);
+                delete callbackTimeouts[key];
+                callback(null, null);
+            }, timeout);
+        } else {
+            setTimeout(function() {
+                if (key.callbackTracker !== true) {
+                    key.callbackTracker = true;
+                    callback(null, null);
+                }
+            }, timeout);
+        }
     },
 
-    checkCallbackTimeout: function(jsapi, callback) {
-        if (jsapi.callbackTracker !== true) {
-            jsapi.callbackTracker = true;
-            callback(null, null);
+    checkCallbackTimeout: function(key, callback) {
+        if (PV.isString(key)) {
+            if (callbackTimeouts.hasOwnProperty(key)) {
+                clearTimeout(callbackTimeouts[key]);
+                delete callbackTimeouts[key];
+                callback(null, null);
+            }
+        } else {
+            if (key.callbackTracker !== true) {
+                key.callbackTracker = true;
+                callback(null, null);
+            }
         }
     },
 
