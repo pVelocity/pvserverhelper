@@ -1,7 +1,7 @@
-### ``setupLogger(jsapi, [timeStamp])``
+### ``setupLogger(jsapi, [timestamp])``
 Setups a logger for logging messages.
 - `jsapi` `<Object>`
-- `timeStamp` `<Boolean>` : Optional, default is ``false``
+- `timestamp` `<Boolean>` : Optional, default is ``false``
 
 ```js
 pvh.setupLogger(jsapi);

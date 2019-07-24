@@ -184,16 +184,33 @@ module.exports = {
         return fn;
     },
 
-    setupLogger: function(jsapi, timeStamp) {
+    getErrorMessage: function(error, includeTimestamp) {
+        var message = 'ERROR';
+        if (PV.isString(error.message)) {
+            message = error.message;
+        } else if (PV.isString(error.Message)) {
+            message = error.Message;
+        }
+
+        var timedMsg = '';
+        if (includeTimestamp === true) {
+            timedMsg = PV.getTimestamp() + ' - ' + message;
+        } else {
+            timedMsg = message;
+        }
+        return timedMsg;
+    },
+
+    setupLogger: function(jsapi, timestamp) {
         if (PV.isObject(jsapi.logger) === false) {
             jsapi.logger = {
-                timeStamp: timeStamp
+                timestamp: timestamp
             };
         }
         jsapi.logger.info = function(message) {
             var timedMsg = '';
-            if (jsapi.logger.timeStamp === true) {
-                timedMsg = PV.getTimeStamp() + ' - ' + message;
+            if (jsapi.logger.timestamp === true) {
+                timedMsg = PV.getTimestamp() + ' - ' + message;
             } else {
                 timedMsg = message;
             }
@@ -206,30 +223,19 @@ module.exports = {
             }
         };
         jsapi.logger.error = function(error, throwError) {
-            var message = 'ERROR';
-            if (PV.isString(error.message)) {
-                message = error.message;
-            } else if (PV.isString(error.Message)) {
-                message = error.Message;
-            }
+            var message = this.getErrorMessage(error, jsapi.logger.timestamp);
 
-            var timedMsg = '';
-            if (jsapi.logger.timeStamp === true) {
-                timedMsg = PV.getTimeStamp() + ' - ' + message;
-            } else {
-                timedMsg = message;
-            }
             if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
-                jsapi.logger.log('error', timedMsg);
+                jsapi.logger.log('error', message);
             } else if (PV.isFunction(jsapi.log)) {
-                jsapi.log('error', timedMsg);
+                jsapi.log('error', message);
             } else {
-                console.log('ERROR: ' + timedMsg);
+                console.log('ERROR: ' + message);
             }
             if (throwError !== false) {
                 throw error;
             }
-        };
+        }.bind(this);
         jsapi.logger.startTime = function(message) {
             var timerObj = {
                 startTime: new Date(),
@@ -489,7 +495,7 @@ module.exports = {
     //     }
     // };
     aggregateLookup: function(jsapi, sourceCollectionName, lookupCollectionName, lookupInfo, lookupOperations) {
-        var timestamp = PV.createHash(PV.getTimeStamp());
+        var timestamp = PV.createHash(PV.getTimestamp());
         var tempLookupCollection = 'AG_' + PV.createHash(lookupCollectionName + '_' + timestamp);
         var tempSourceCollection = 'AG_' + PV.createHash(sourceCollectionName + '_' + timestamp);
 

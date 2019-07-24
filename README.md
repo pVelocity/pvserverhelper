@@ -65,6 +65,7 @@ var pvh = require('pvserverhelper');
 ### Other
 - [listFiles](docs/Other/listFiles.md)
 - [setupLogger](docs/Other/setupLogger.md)
+- [getErrorMessage](docs/Other/getErrorMessage.md)
 - [isEmptyValue](docs/Other/isEmptyValue.md)
 - [convertFile](docs/Other/convertFile.md)
 - [convertStream](docs/Other/convertStream.md)
