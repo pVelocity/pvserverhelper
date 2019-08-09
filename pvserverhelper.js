@@ -861,15 +861,22 @@ module.exports = {
         }
     },
 
-    login: function(jsapi, protocol, host, port, username, password, sessionContext) {
+    login: function(jsapi, protocol, host, port, username, password, credKey, sessionContext) {
         jsapi.logger.info('Logging in ' + protocol + '://' + host + ':' + port);
         jsapi.pv = new pvserver.PVServerAPI(protocol + '://' + host + ':' + port);
 
         let params = {
             User: username,
-            Password: password,
             TimeOut: jsapi.pv.timeOut,
             DeviceName: jsapi.pv.device
+        }
+
+        if (PV.isString(password)) {
+            params.Password = password;
+        }
+
+        if (PV.isString(credKey)) {
+            params.CredentialKey = credKey;
         }
 
         if (PV.isObject(sessionContext)) {
