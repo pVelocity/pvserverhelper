@@ -132,7 +132,7 @@ module.exports = {
             }
 
             if (PV.isString(err.SCRIPT_ERROR_MSG)) {
-                message = err.SCRIPT_ERROR_MSG;
+                err.message = err.SCRIPT_ERROR_MSG;
             } else if (PV.isString(err.message)) {
                 err.message = err.message;
             } else if (PV.isString(err.Message)) {
