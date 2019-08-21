@@ -122,9 +122,14 @@ module.exports = {
     },
 
     scriptErrHandler: function(jsapi, callback, passError) {
-        var fn = function(err) {
+        var fn = function(error) {
 
             this.cleanupForNonCached(jsapi);
+
+            var err = error;
+            if (error.json) {
+                err = this.getPVStatus(error.json)
+            }
 
             if (PV.isString(err.SCRIPT_ERROR_MSG)) {
                 message = err.SCRIPT_ERROR_MSG;
