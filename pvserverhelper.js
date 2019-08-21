@@ -126,7 +126,9 @@ module.exports = {
 
             this.cleanupForNonCached(jsapi);
 
-            if (PV.isString(err.message)) {
+            if (PV.isString(err.SCRIPT_ERROR_MSG)) {
+                message = err.SCRIPT_ERROR_MSG;
+            } else if (PV.isString(err.message)) {
                 err.message = err.message;
             } else if (PV.isString(err.Message)) {
                 err.message = err.Message;
@@ -184,12 +186,14 @@ module.exports = {
         return fn;
     },
 
-    getErrorMessage: function(error, includeTimestamp) {
+    getErrorMessage: function(err, includeTimestamp) {
         var message = 'ERROR';
-        if (PV.isString(error.message)) {
-            message = error.message;
-        } else if (PV.isString(error.Message)) {
-            message = error.Message;
+        if (PV.isString(err.SCRIPT_ERROR_MSG)) {
+            message = err.SCRIPT_ERROR_MSG;
+        } else if (PV.isString(err.message)) {
+            message = err.message;
+        } else if (PV.isString(err.Message)) {
+            message = err.Message;
         }
 
         var timedMsg = '';
