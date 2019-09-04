@@ -1,9 +1,8 @@
-### ``checkCallbackTimeout(jsapi, callback)``
-Calls ``callback(null, null)`` if ``jsapi.callbackTracker !== true``.
-Sets ``jsapi.callbackTracker = true`` if called.
-- `jsapi` `<Object>`
+### ``checkCallbackTimeout(key, callback)``
+Calls ``callback(null, null)`` if ``pvh.callbackTimeouts.hasOwnProperty(key) === true``.
+- `key` `<String>`
 - `callback` `<Function>`
 
 ```js
-pvh.checkCallbackTimeout(jsapi, callback);
+pvh.checkCallbackTimeout('timer1', callback);
 ```

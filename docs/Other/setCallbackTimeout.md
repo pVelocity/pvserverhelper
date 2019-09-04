@@ -1,9 +1,9 @@
-### ``setCallbackTimeout(jsapi, timeout, callback)``
-Calls ``callback(null, null)`` after ``timeout`` ms has passed if ``jsapi.callbackTracker !== true``. Sets ``jsapi.callbackTracker = true`` if called.
-- `jsapi` `<Object>`
+### ``setCallbackTimeout(key, timeout, callback)``
+Calls ``callback(null, null)`` after ``timeout`` ms has passed for the ``key``. ``pvh.callbackTimeouts.hasOwnProperty(key) === false`` if callback is envoked.
+- `key` `<String>`
 - `timeout` `<Number>`
 - `callback` `<Function>`
 
 ```js
-pvh.setCallbackTimeout(jsapi, 1000, callback);
+pvh.setCallbackTimeout('timeout1', 1000, callback);
 ```
