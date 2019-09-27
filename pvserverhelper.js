@@ -1638,5 +1638,24 @@ module.exports = {
             }
         }
         return files;
+    },
+    readFirstLine: function(filePath, options) {
+        return new prom(function(resolve, reject) {
+            var rs = fs.createReadStream(filePath, options);
+            var txt = '';
+            var pos = 0;
+            var index;
+            rs.on('data', function (chunk) {
+                index = chunk.indexOf('\n');
+                txt += chunk;
+                index !== -1 ? rs.close() : pos += chunk.length;
+            });
+            rs.on('close', function () {
+                resolve(txt.slice(0, pos + index));
+            });
+            rs.on('error', function (err) {
+                reject(err);
+            });
+        });
     }
 };
