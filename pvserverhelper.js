@@ -314,21 +314,51 @@ module.exports = {
         }
     },
 
-    execServlet: function(jsapi, username, password, operation, params, headers) {
+    saveFile: function(url, dest, headers) {
+        return new prom(function(resolve, reject) {
+            let file = fs.createWriteStream(dest);
+
+            var options = {
+                method: 'GET',
+                uri: url,
+                gzip: true,
+                headers: {
+                    'user-agent': 'pvserverhelper',
+                    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+                    'Accept-Encoding': 'gzip, deflate, br',
+                    'Accept-Language': 'en-US,en;q=0.9,fr;q=0.8,ro;q=0.7,ru;q=0.6,la;q=0.5,pt;q=0.4,de;q=0.3',
+                    'Cache-Control': 'max-age=0',
+                    'Connection': 'keep-alive',
+                    'Upgrade-Insecure-Requests': '1',
+                }
+            };
+            if (PV.isObject(headers)) {
+                for (var headerKey in headers) {
+                    options.headers[headerKey] = headers[headerKey];
+                }
+            }
+            request(options).pipe(file).on('finish', function() {
+                resolve();
+            }).on('error', function(error) {
+                file.end();
+                reject(error);
+            });
+        });
+    },
+
+    execServlet: function(jsapi, headers, operation, params) {
         var options = {
             headers: {
                 'user-agent': 'pvserverhelper',
                 'content-type': 'application/x-www-form-urlencoded',
                 'cache-control': 'no-cache',
-                'pragma': 'no-cache',
-                'authorization': 'Basic ' + new Buffer(username + ':' + password).toString('base64')
+                'pragma': 'no-cache'
             }
         };
+
         if (PV.isObject(headers)) {
             for (var headerKey in headers) {
-                if (headerKey !== 'authorization') {
-                    options.headers[headerKey] = headers[headerKey];
-                }
+                options.headers[headerKey] = headers[headerKey];
             }
         }
         options.url = jsapi.pv.urlScheme + '://' + jsapi.pv.hostName + ':' + jsapi.pv.hostPort + '/admin/' + operation;

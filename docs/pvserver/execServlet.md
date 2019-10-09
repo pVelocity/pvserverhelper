@@ -1,24 +1,17 @@
-### ``execServlet(jsapi, username, password, operation, params, headers)``
-Calls the Engine Calculation Process and Admin Servlets ``operation`` on ``protocol``://``host``:``port``with ``username`` and ``password``.
+### ``execServlet(jsapi, headers, operation, params)``
+Calls the Engine Calculation Process and Admin Servlets for ``operation`` on ``protocol``://``host``:``port``with ``headers`` and ``params``. ``headers must include either ``authorization`` or ``cookie`` to be authenticated.
+
 - `jsapi` `<Object>`
-- `username` `<String>`
-- `password` `<String>`
+- `headers` `<Object>`
 - `operation` `<String>`
 - `params` `<Object>` : Optional, default is `{}`
-- `headers` `<Object>` : Optional, default is
-```js
-{
-    'user-agent': 'pvserverhelper',
-    'content-type': 'application/x-www-form-urlencoded',
-    'cache-control': 'no-cache',
-    'pragma': 'no-cache'
-}
-```
 
 ```js
-pvh.execServlet(jsapi, 'username', 'password', 'GetUsage', {
+pvh.execServlet(jsapi, 'GetUsage', {
     fromdate: '01162017',
     todate: '01162018'
+}, {
+	authorization: 'Basic ' + new Buffer(username + ':' + password).toString('base64')
 }).then(function(result) {
     console.log(result);
 });
