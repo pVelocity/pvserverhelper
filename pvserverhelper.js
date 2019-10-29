@@ -749,38 +749,64 @@ module.exports = {
         if (PV.isObject(projection) === false) {
             projection = {};
         }
-        return jsapi.mongoConn.collection(sourceCollection).find(filter, projection).toArrayAsync().then(function(result) {
-            if (result.length > 0) {
-                if (PV.isString(overwriteKey)) {
-                    var bulk = jsapi.mongoConn.collection(targetCollection).initializeOrderedBulkOp();
-                    result.forEach(function(item) {
-                        var filter2 = {};
+        let batchSize = 2000;
+        return new prom(function(resolve, reject) {
+            let bulk = jsapi.mongoConn.collection(targetCollection).initializeOrderedBulkOp();
+            jsapi.mongoConn.collection(sourceCollection).find(filter, projection, async function(err, cursor){
+                if (err) {
+                    reject(err);
+                }
+                while(await cursor.hasNext()) {
+                    let item = await cursor.next();
+                    if (bulk.length > batchSize) {
+                        await this.bulkExecute(bulk);
+                        bulk = bulk = jsapi.mongoConn.collection(targetCollection).initializeOrderedBulkOp();
+                    }
+
+                    if (PV.isString(overwriteKey)) {
+                        let filter2 = {};
                         filter2[overwriteKey] = item[overwriteKey];
                         bulk.find(filter2).remove();
-                        bulk.insert(item);
-                    });
-                    return this.bulkExecute(bulk);
-                } else {
-                    return jsapi.mongoConn.collection(targetCollection).insertManyAsync(result);
+                    }
+                    bulk.insert(item);
                 }
-            } else {
-                return result;
-            }
+                if (bulk.length > 0) {
+                    resolve(this.bulkExecute(bulk));
+                } else {
+                    resolve();
+                }
+            }.bind(this));
         }.bind(this));
     },
 
     move: function(jsapi, sourceCollection, targetCollection, filter, cleanId) {
-        var projection = {};
-        if (cleanId === true) {
-            projection = {
-                _id: 0
-            };
+        if (PV.isObject(filter) === false) {
+            filter = {};
         }
-        return this.copy(jsapi, sourceCollection, targetCollection, filter, projection).then(function(result) {
-            if (PV.isObject(filter) === false) {
-                return this.dropCollection(jsapi, sourceCollection);
+        let batchSize = 2000;
+        return new prom(async function(resolve, reject) {
+            let count = await jsapi.mongoConn.collection(sourceCollection).find(filter).count();
+            while (count > 0) {
+                let insertedIds = [];
+                let sourceDocs = await jsapi.mongoConn.collection(sourceCollection).find(filter).limit(batchSize).toArray();
+                let bulk = jsapi.mongoConn.collection(targetCollection).initializeUnorderedBulkOp();
+                sourceDocs.forEach(function(doc) {
+                    insertedIds.push(doc._id);
+                    if (cleanId === true) {
+                        delete doc._id;
+                    }
+                    bulk.insert(doc);
+                });
+                if (bulk.length > 0) {
+                    await this.bulkExecute(bulk);
+                }
+                await jsapi.mongoConn.collection(sourceCollection).remove({ _id: { $in: insertedIds } });
+                count = await jsapi.mongoConn.collection(sourceCollection).find(filter).count();
+            }
+            if (PV.isEmptyObject(filter)) {
+                resolve(this.dropCollection(jsapi, sourceCollection));
             } else {
-                return jsapi.mongoConn.collection(sourceCollection).removeAsync(filter);
+                resolve();
             }
         }.bind(this));
     },
