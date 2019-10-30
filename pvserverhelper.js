@@ -760,7 +760,7 @@ module.exports = {
                     let item = await cursor.next();
                     if (bulk.length > batchSize) {
                         await this.bulkExecute(bulk);
-                        bulk = bulk = jsapi.mongoConn.collection(targetCollection).initializeOrderedBulkOp();
+                        bulk = jsapi.mongoConn.collection(targetCollection).initializeOrderedBulkOp();
                     }
 
                     if (PV.isString(overwriteKey)) {
