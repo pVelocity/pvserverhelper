@@ -1118,7 +1118,7 @@ module.exports = {
                     resolve(false);
                 }.bind(this));
             }
-        });
+        }.bind(this));
     },
 
     createSalesforceProviderModelWithSession: function(jsapi, dataSetId, access_token, instance_url) {
@@ -1153,7 +1153,7 @@ module.exports = {
                     resolve(false);
                 }.bind(this));
             }
-        });
+        }.bind(this));
     },
 
     createMongoProviderModel: function(jsapi, username, appName, dataSetId, options) {
