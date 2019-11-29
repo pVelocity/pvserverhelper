@@ -1086,37 +1086,74 @@ module.exports = {
         return PV.isString(jsapi[infoTag].modelId);
     },
 
-    createSalesforceProviderModel: function(jsapi, access_token, instance_url, dataSetId) {
-        if (PV.isObject(jsapi.sfdc) === false) {
-            jsapi.sfdc = {};
-        }
-        var dataSetQuery = {
-            'Type': 'Salesforce',
-            'KeyValue': [{
-                'Key': 'access_token',
-                'Value': access_token
-            }, {
-                'Key': 'instance_url',
-                'Value': instance_url
-            }]
-        };
+    createSalesforceProviderModel: function(jsapi, dataSetId, username, password) {
+        return new prom(function(resolve, reject) {
+            if (PV.isObject(jsapi.sfdc) === false) {
+                jsapi.sfdc = {};
+            }
+            if (PV.isString(jsapi.sfdc.modelId)) {
+                resolve(true);
+            } else {
+                var dataSetQuery = {
+                    'Type': 'Salesforce',
+                    'KeyValue': [{
+                        'Key': 'username',
+                        'Value': username
+                    }, {
+                        'Key': 'password',
+                        'Value': password
+                    }, {
+                        'Key': 'dataSetId',
+                        'Value': dataSetId
+                    }]
+                };
 
-        if (PV.isString(dataSetId)) {
-            dataSetQuery.KeyValue.push({
-                'Key': 'dataSetId',
-                'Value': dataSetId
-            })
-        }
+                jsapi.logger.info('Creating provider model with ' + username + ' with ' + dataSetId);
+                return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
+                    var status = this.getPVStatus(resp);
+                    jsapi.sfdc.modelId = status.ModelId;
+                    resolve(true);
+                }.bind(this)).catch(function(err) {
+                    jsapi.logger.error(this.getPVStatus(err.json));
+                    resolve(false);
+                }.bind(this));
+            }
+        });
+    },
 
-        jsapi.logger.info('Creating provider model with ' + access_token + ' on ' + instance_url + ' with ' + dataSetId);
-        return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-                var status = this.getPVStatus(resp);
-                jsapi.sfdc.modelId = status.ModelId;
-                return true;
-        }.bind(this)).catch(function(err) {
-            jsapi.logger.error(this.getPVStatus(err.json));
-            return false;
-        }.bind(this));
+    createSalesforceProviderModelWithSession: function(jsapi, dataSetId, access_token, instance_url) {
+        return new prom(function(resolve, reject) {
+            if (PV.isObject(jsapi.sfdc) === false) {
+                jsapi.sfdc = {};
+            }
+            if (PV.isString(jsapi.sfdc.modelId)) {
+                resolve(true);
+            } else {
+                var dataSetQuery = {
+                    'Type': 'Salesforce',
+                    'KeyValue': [{
+                        'Key': 'dataSetId',
+                        'Value': dataSetId
+                    }, {
+                        'Key': 'access_token',
+                        'Value': access_token
+                    }, {
+                        'Key': 'instance_url',
+                        'Value': instance_url
+                    }]
+                };
+
+                jsapi.logger.info('Creating provider model with access_token on ' + instance_url + ' with ' + dataSetId);
+                return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
+                    var status = this.getPVStatus(resp);
+                    jsapi.sfdc.modelId = status.ModelId;
+                    resolve(true);
+                }.bind(this)).catch(function(err) {
+                    jsapi.logger.error(this.getPVStatus(err.json));
+                    resolve(false);
+                }.bind(this));
+            }
+        });
     },
 
     createMongoProviderModel: function(jsapi, username, appName, dataSetId, options) {

@@ -23,6 +23,7 @@ var pvh = require('pvserverhelper');
 - [getProviderModelUrl](docs/pvserver/getProviderModelUrl.md)
 - [parseProviderModelUrl](docs/pvserver/parseProviderModelUrl.md)
 - [createSalesforceProviderModel](docs/pvserver/createSalesforceProviderModel.md)
+- [createSalesforceProviderModelWithSession](docs/pvserver/createSalesforceProviderModelWithSession.md)
 - [createMongoProviderModel](docs/pvserver/createMongoProviderModel.md)
 - [getEntityGroupsAndFields](docs/pvserver/getEntityGroupsAndFields.md)
 - [convertGroupOrFieldArrayForQueryParams](docs/pvserver/convertGroupOrFieldArrayForQueryParams.md)

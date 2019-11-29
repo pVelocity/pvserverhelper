@@ -1,9 +1,10 @@
-### ``createSalesforceProviderModel(jsapi, access_token, instance_url)``
-Creates provider model with ``access_token`` on ``instance_url``.
+### ``createSalesforceProviderModel(jsapi, dataSetId, username, password)``
+Creates provider model with ``username``, ``password`` on ``dataSetId``.
 - `jsapi` `<Object>`
-- `access_token` `<String>`
-- `instance_url` `<String>`
+- `dataSetId` `<String>`
+- `username` `<String>`
+- `password` `<String>`
 
 ```js
-pvh.createSalesforceProviderModel(jsapi, 'f13fafasfas', 'http://login.salesforce.com');
+pvh.createSalesforceProviderModel(jsapi, 'Salesforce', 'person@person.com', 'abc123');
 ```
