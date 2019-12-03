@@ -534,9 +534,9 @@ module.exports = {
     //     }
     // };
     aggregateLookup: function(jsapi, sourceCollectionName, lookupCollectionName, lookupInfo, lookupOperations) {
-        var timestamp = PV.createHash(PV.getTimestamp(), 32);
-        var tempLookupCollection = 'AG_' + PV.createHash(lookupCollectionName + '_' + timestamp, 32);
-        var tempSourceCollection = 'AG_' + PV.createHash(sourceCollectionName + '_' + timestamp, 32);
+        var id = PV.getTimestamp() + Math.random();
+        var tempLookupCollection = 'AG_' + PV.createHash(lookupCollectionName + '_' + id, 32);
+        var tempSourceCollection = 'AG_' + PV.createHash(sourceCollectionName + '_' + id, 32);
 
         var lookupDuplicate = [];
         var indices = [];
@@ -550,7 +550,7 @@ module.exports = {
             var lookup = lookupInfo[lookupField];
             var lookupKeyString = JSON.stringify(lookup.lookupKey);
 
-            var lookupKey = PV.createHash(lookupKeyString + '1_' + timestamp, 32);
+            var lookupKey = PV.createHash(lookupKeyString + '1_' + id, 32);
             if (lookupDuplicate.indexOf(lookupKeyString) === -1) {
                 project[lookupKey] = PV.isString(lookup.lookupKey) ? '$' + lookup.lookupKey : lookup.lookupKey;
                 lookupDuplicate.push(lookupKeyString);
@@ -603,9 +603,9 @@ module.exports = {
                 var lookup = lookupInfo[lookupField];
                 var lookupKeyString = JSON.stringify(lookup.lookupKey);
 
-                var lookupKey = PV.createHash(lookupKeyString + '1_' + timestamp, 32);
-                var tempKey = PV.createHash(lookup.sourceKey + '2_' + timestamp, 32);
-                var lookupFieldKey = PV.createHash(lookupField + '3_' + timestamp, 32);
+                var lookupKey = PV.createHash(lookupKeyString + '1_' + id, 32);
+                var tempKey = PV.createHash(lookup.sourceKey + '2_' + id, 32);
+                var lookupFieldKey = PV.createHash(lookupField + '3_' + id, 32);
                 if (lookupDuplicate.indexOf(lookupKeyString) === -1 && tempKeyDuplicate.indexOf(tempKey) === -1) {
                     pipelineLookup.push({
                         $lookup: {
@@ -655,7 +655,7 @@ module.exports = {
             var bulk = jsapi.mongoConn.collection(tempSourceCollection).initializeOrderedBulkOp();
             for (var lookupField in lookupInfo) {
                 var lookup = lookupInfo[lookupField];
-                var lookupFieldKey = PV.createHash(lookupField + '3_' + timestamp, 32);
+                var lookupFieldKey = PV.createHash(lookupField + '3_' + id, 32);
 
                 var defaultValue = lookup.defaultValue;
                 if (PV.isNull(defaultValue) === false && PV.isUndefined(defaultValue) === false) {
