@@ -402,7 +402,10 @@ module.exports = {
                     } else {
                         jsapi.logger.info('stdout: ' + stdout, true);
                         jsapi.logger.info('stderr: ' + stderr, true);
-                        resolve();
+                        resolve({
+                            'stdout': stdout,
+                            'stderr': stderr
+                        });
                     }
                 });
             } catch (err) {
