@@ -457,17 +457,11 @@ module.exports = {
             if (result.length === 0) {
                 return jsapi.mongoConn.createCollectionAsync(collectionName);
             } else if (drop) {
-                return jsapi.mongoConn.collection(collectionName).dropAsync();
+                return jsapi.mongoConn.collection(collectionName).dropAsync().then(function(){
+                    return jsapi.mongoConn.createCollectionAsync(collectionName);
+                });
             } else {
                 return false;
-            }
-        }).then(function(result) {
-            if (PV.isObject(result)) {
-                return result;
-            } else if (drop) {
-                return jsapi.mongoConn.createCollectionAsync(collectionName);
-            } else {
-                return;
             }
         }).then(function(result) {
             if (PV.isObject(result) && (PV.isArray(indices)) || PV.isObject(indices)) {
