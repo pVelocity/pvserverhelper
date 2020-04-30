@@ -7,12 +7,12 @@
 
 var iconv = require('iconv-lite');
 var fs = require('fs');
-var prom = require('bluebird');
 var mongodb = require('mongodb');
 var pvserver = require('pvserver');
-var request = require('request');
 var Converter = require('csvtojson').Converter;
 var path = require('path');
+var http = require('http');
+var https = require('https');
 
 require('pvjs');
 
@@ -59,7 +59,7 @@ module.exports = {
 
     serializePromises: function(workFunction, workContext, workArray) {
         var results = [];
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             var func = workFunction;
             var context = workContext;
             var next = function(curIndex) {
@@ -268,7 +268,7 @@ module.exports = {
     },
 
     convertFile: function(source, target, options, decoding, encoding) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             var rd = fs.createReadStream(source);
             var wr = fs.createWriteStream(target);
 
@@ -315,7 +315,7 @@ module.exports = {
     },
 
     saveFile: function(url, dest, headers) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             let file = fs.createWriteStream(dest);
 
             var options = {
@@ -347,48 +347,61 @@ module.exports = {
     },
 
     execServlet: function(jsapi, headers, operation, params) {
-        var options = {
-            headers: {
-                'user-agent': 'pvserverhelper',
-                'content-type': 'application/x-www-form-urlencoded',
-                'cache-control': 'no-cache',
-                'pragma': 'no-cache'
-            }
-        };
-
-        if (PV.isObject(headers)) {
-            for (var headerKey in headers) {
-                options.headers[headerKey] = headers[headerKey];
-            }
-        }
-        options.url = jsapi.pv.urlScheme + '://' + jsapi.pv.hostName + ':' + jsapi.pv.hostPort + '/admin/' + operation;
-
-        if (PV.isObject(params)) {
-            var args = [];
-            for (var paramKey in params) {
-                args.push(paramKey + '=' + params[paramKey]);
-            }
-            options.url = options.url + '?' + args.join('&');
-        }
-
-        options.method = 'POST';
-        return this.httpMethod(options);
-    },
-
-    httpMethod: function(options) {
-        return new prom(function(resolve, reject) {
-            request(options, function(err, httpResponse, body) {
-                if (err) {
-                    reject(err);
-                } else {
-                    resolve(body);
+        return new Promise(function(resolve, reject) {
+            var options = {
+                headers: {
+                    'user-agent': 'pvserverhelper',
+                    'content-type': 'application/x-www-form-urlencoded',
+                    'cache-control': 'no-cache',
+                    'pragma': 'no-cache'
                 }
+            };
+
+            if (PV.isObject(headers)) {
+                for (var headerKey in headers) {
+                    options.headers[headerKey] = headers[headerKey];
+                }
+            }
+
+            var url = jsapi.pv.urlScheme + '://' + jsapi.pv.hostName + ':' + jsapi.pv.hostPort + '/admin/' + operation;
+
+            if (PV.isObject(params)) {
+                var args = [];
+                for (var paramKey in params) {
+                    args.push(paramKey + '=' + params[paramKey]);
+                }
+                url = url + '?' + args.join('&');
+            }
+
+            options.method = 'POST';
+
+          let reqClient = http;
+          if (url.startsWith('https')) {
+            reqClient = https;
+          }
+
+          let req = reqClient.request(url, options, function(res) {
+            let data = '';
+            res.on('data', (chunk) => {
+              data += chunk;
             });
+            res.on('end', () => {
+              res.body = data;
+              resolve(res);
+            });
+          });
+          req.on('error', (e) => {
+            reject(e);
+          });
+
+          // Write data to request body
+          req.write('');
+          req.end();
         });
     },
 
     exec: function(jsapi, cmd, options) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             try {
                 var exec = require('child_process').exec;
                 if (PV.isObject(options) === false) {
@@ -415,7 +428,7 @@ module.exports = {
     },
 
     bulkExecute: function(bulk) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             bulk.execute(function(err, result) {
                 if (err) {
                     reject(err);
@@ -434,7 +447,7 @@ module.exports = {
                     promises.push(jsapi.mongoConn.collection(collection.name).dropAsync());
                 }
             });
-            return prom.all(promises);
+            return Promise.all(promises);
         });
     },
 
@@ -507,7 +520,7 @@ module.exports = {
             }
         }
 
-        return prom.all(promises);
+        return Promise.all(promises);
     },
 
     // this replaces your source collection with a projection that includes the lookup fields
@@ -564,7 +577,7 @@ module.exports = {
         promises.push(jsapi.mongoConn.collection(sourceCollectionName).indexInformationAsync());
         promises.push(this.createCollection(jsapi, tempLookupCollection, true, indices));
 
-        return prom.all(promises).then(function(results) {
+        return Promise.all(promises).then(function(results) {
             var pipeline = [];
             if (PV.isArray(lookupOperations)) {
                 lookupOperations.forEach(function(operation) {
@@ -587,7 +600,7 @@ module.exports = {
                 allowDiskUse: true
             }));
 
-            return prom.all(promises);
+            return Promise.all(promises);
         }.bind(this)).then(function(results) {
             var project = results[0];
 
@@ -689,7 +702,7 @@ module.exports = {
             if (bulk.length > 0) {
                 promises.push(this.bulkExecute(bulk));
             }
-            return prom.all(promises);
+            return Promise.all(promises);
         }.bind(this)).then(function() {
             return jsapi.mongoConn.collection(tempSourceCollection).rename(sourceCollectionName);
         }.bind(this));
@@ -747,7 +760,7 @@ module.exports = {
             projection = {};
         }
         let batchSize = 2000;
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             let bulk = jsapi.mongoConn.collection(targetCollection).initializeOrderedBulkOp();
             jsapi.mongoConn.collection(sourceCollection).find(filter, projection, async function(err, cursor){
                 if (err) {
@@ -781,7 +794,7 @@ module.exports = {
             filter = {};
         }
         let batchSize = 2000;
-        return new prom(async function(resolve, reject) {
+        return new Promise(async function(resolve, reject) {
             let count = await jsapi.mongoConn.collection(sourceCollection).find(filter).count();
             while (count > 0) {
                 let insertedIds = [];
@@ -878,7 +891,7 @@ module.exports = {
                 $set: set
             }));
 
-            return prom.all(promises);
+            return Promise.all(promises);
         });
     },
 
@@ -970,7 +983,7 @@ module.exports = {
     },
 
     loginWithSession: function(jsapi) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             if (PV.isObject(jsapi.pv) === false) {
                 jsapi.pv = new pvserver.PVServerAPI(jsapi.PVSession.engineSessionInfo.url);
                 jsapi.pv.login(null, null, jsapi.PVSession.engineSessionInfo.apiKey).then(function(resp) {
@@ -1084,7 +1097,7 @@ module.exports = {
     },
 
     createSalesforceProviderModel: function(jsapi, dataSetId, username, password) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             if (PV.isObject(jsapi.sfdc) === false) {
                 jsapi.sfdc = {};
             }
@@ -1119,7 +1132,7 @@ module.exports = {
     },
 
     createSalesforceProviderModelWithSession: function(jsapi, dataSetId, access_token, instance_url) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             if (PV.isObject(jsapi.sfdc) === false) {
                 jsapi.sfdc = {};
             }
@@ -1154,7 +1167,7 @@ module.exports = {
     },
 
     createMongoProviderModel: function(jsapi, username, appName, dataSetId, options) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             if (PV.isObject(jsapi.mongo) === false) {
                 jsapi.mongo = {};
             }
@@ -1216,7 +1229,7 @@ module.exports = {
     },
 
     getProviderModelUrl: function(jsapi, options) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
                 jsapi.logger.info('Mongo Host, Database and Url already exist');
                 resolve(true);
@@ -1282,7 +1295,7 @@ module.exports = {
     },
 
     setupMongoDBUrl: function(jsapi, serverHost, serverPort, serverUserId, serverPassword, serverAuthDatabase, database, options) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             if (PV.isObject(jsapi.mongo) === false) {
                 jsapi.mongo = {};
             }
@@ -1361,11 +1374,12 @@ module.exports = {
     },
 
     createMongoDB: function(jsapi) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             if (PV.isObject(jsapi.mongoConn) === false) {
                 if (PV.isObject(jsapi.mongo) && PV.isString(jsapi.mongo.url)) {
-                    var MongoClient = prom.promisifyAll(mongodb);
-                    MongoClient.connect(jsapi.mongo.url).then(function(dbconn) {
+                    mongodb.MongoClient.connect(jsapi.mongo.url, {
+                        useUnifiedTopology: true
+                    }).then(function(dbconn) {
                         jsapi.mongoConn = dbconn;
                         resolve(true);
                     });
@@ -1730,7 +1744,7 @@ module.exports = {
         return files;
     },
     readFirstLine: function(filePath, options) {
-        return new prom(function(resolve, reject) {
+        return new Promise(function(resolve, reject) {
             var rs = fs.createReadStream(filePath, options);
             var txt = '';
             var pos = 0;
