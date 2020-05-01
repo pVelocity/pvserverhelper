@@ -444,7 +444,7 @@ module.exports = {
             var promises = [];
             result.forEach(function(collection) {
                 if (matchFunction(collection.name)) {
-                    promises.push(jsapi.mongoConn.collection(collection.name).dropAsync());
+                    promises.push(jsapi.mongoConn.collection(collection.name).drop());
                 }
             });
             return Promise.all(promises);
@@ -456,7 +456,7 @@ module.exports = {
             name: collectionName
         }).toArray().then(function(result) {
             if (result.length > 0) {
-                return jsapi.mongoConn.collection(collectionName).dropAsync();
+                return jsapi.mongoConn.collection(collectionName).drop();
             } else {
                 return;
             }
@@ -468,10 +468,10 @@ module.exports = {
             name: collectionName
         }).toArray().then(function(result) {
             if (result.length === 0) {
-                return jsapi.mongoConn.createCollectionAsync(collectionName);
+                return jsapi.mongoConn.createCollection(collectionName);
             } else if (drop) {
-                return jsapi.mongoConn.collection(collectionName).dropAsync().then(function(){
-                    return jsapi.mongoConn.createCollectionAsync(collectionName);
+                return jsapi.mongoConn.collection(collectionName).drop().then(function(){
+                    return jsapi.mongoConn.createCollection(collectionName);
                 });
             } else {
                 return false;
@@ -498,7 +498,7 @@ module.exports = {
                     if (PV.isObject(options) === false) {
                         options = {};
                     }
-                    promises.push(jsapi.mongoConn.collection(collectionName).ensureIndexAsync(keys, options));
+                    promises.push(jsapi.mongoConn.collection(collectionName).ensureIndex(keys, options));
                 }
             });
         } else if (PV.isObject(indices)) {
@@ -515,7 +515,7 @@ module.exports = {
                         keys[index[0]] = index[1];
                     }
 
-                    promises.push(jsapi.mongoConn.collection(collectionName).ensureIndexAsync(keys, options));
+                    promises.push(jsapi.mongoConn.collection(collectionName).ensureIndex(keys, options));
                 }
             }
         }
@@ -574,7 +574,7 @@ module.exports = {
         lookupDuplicate = [];
 
         var promises = [];
-        promises.push(jsapi.mongoConn.collection(sourceCollectionName).indexInformationAsync());
+        promises.push(jsapi.mongoConn.collection(sourceCollectionName).indexInformation());
         promises.push(this.createCollection(jsapi, tempLookupCollection, true, indices));
 
         return Promise.all(promises).then(function(results) {
@@ -596,7 +596,7 @@ module.exports = {
             var promises = [];
             promises.push(this.getAggregateProjectMapping(jsapi, sourceCollectionName));
             promises.push(this.createCollection(jsapi, tempSourceCollection, true, results[0]));
-            promises.push(jsapi.mongoConn.collection(lookupCollectionName).aggregateAsync(pipeline, {
+            promises.push(jsapi.mongoConn.collection(lookupCollectionName).aggregate(pipeline, {
                 allowDiskUse: true
             }));
 
@@ -653,7 +653,7 @@ module.exports = {
                 $out: tempSourceCollection
             });
 
-            return jsapi.mongoConn.collection(sourceCollectionName).aggregateAsync(pipeline, {
+            return jsapi.mongoConn.collection(sourceCollectionName).aggregate(pipeline, {
                 allowDiskUse: true
             });
         }.bind(this)).then(function() {
@@ -749,7 +749,7 @@ module.exports = {
         if (PV.isObject(projection) === false) {
             projection = {};
         }
-        return jsapi.mongoConn.collection(collectionName).find(filter, projection).toArrayAsync();
+        return jsapi.mongoConn.collection(collectionName).find(filter, projection).toArray();
     },
 
     copy: function(jsapi, sourceCollection, targetCollection, filter, projection, overwriteKey) {
@@ -831,7 +831,7 @@ module.exports = {
             return null;
         };
         var out = { out: { 'inline': 1 } };
-        return jsapi.mongoConn.collection(collectionName).mapReduceAsync(mapFunction, reduceFunction, out).map(function(i) {
+        return jsapi.mongoConn.collection(collectionName).mapReduce(mapFunction, reduceFunction, out).map(function(i) {
             return i._id;
         });
     },
@@ -876,7 +876,7 @@ module.exports = {
                     };
                 }
                 if (PV.isObject(filter)) {
-                    promises.push(jsapi.mongoConn.collection(child).removeAsync(filter));
+                    promises.push(jsapi.mongoConn.collection(child).remove(filter));
                 }
             }
 
@@ -887,7 +887,7 @@ module.exports = {
                 updateFilter._id = id;
             }
 
-            promises.push(jsapi.mongoConn.collection(collectionName).updateOneAsync(updateFilter, {
+            promises.push(jsapi.mongoConn.collection(collectionName).updateOne(updateFilter, {
                 $set: set
             }));
 
