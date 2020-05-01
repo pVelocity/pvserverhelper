@@ -97,6 +97,7 @@ module.exports = {
         if (jsapi.mongoConn) {
             jsapi.mongoConn.close();
             jsapi.mongoConn = null;
+            jsapi.mongoConnDb = null;
         }
 
         if (jsapi.sfdcConn) {
@@ -440,11 +441,11 @@ module.exports = {
     },
 
     dropSomeCollections: function(jsapi, matchFunction) {
-        return jsapi.mongoConn.listCollections({}).toArray().then(function(result) {
+        return jsapi.mongoConnDb.listCollections({}).toArray().then(function(result) {
             var promises = [];
             result.forEach(function(collection) {
                 if (matchFunction(collection.name)) {
-                    promises.push(jsapi.mongoConn.collection(collection.name).drop());
+                    promises.push(jsapi.mongoConnDb.collection(collection.name).drop());
                 }
             });
             return Promise.all(promises);
@@ -452,11 +453,11 @@ module.exports = {
     },
 
     dropCollection: function(jsapi, collectionName) {
-        return jsapi.mongoConn.listCollections({
+        return jsapi.mongoConnDb.listCollections({
             name: collectionName
         }).toArray().then(function(result) {
             if (result.length > 0) {
-                return jsapi.mongoConn.collection(collectionName).drop();
+                return jsapi.mongoConnDb.collection(collectionName).drop();
             } else {
                 return;
             }
@@ -464,14 +465,14 @@ module.exports = {
     },
 
     createCollection: function(jsapi, collectionName, drop, indices) {
-        return jsapi.mongoConn.listCollections({
+        return jsapi.mongoConnDb.listCollections({
             name: collectionName
         }).toArray().then(function(result) {
             if (result.length === 0) {
-                return jsapi.mongoConn.createCollection(collectionName);
+                return jsapi.mongoConnDb.createCollection(collectionName);
             } else if (drop) {
-                return jsapi.mongoConn.collection(collectionName).drop().then(function(){
-                    return jsapi.mongoConn.createCollection(collectionName);
+                return jsapi.mongoConnDb.collection(collectionName).drop().then(function(){
+                    return jsapi.mongoConnDb.createCollection(collectionName);
                 });
             } else {
                 return false;
@@ -498,7 +499,7 @@ module.exports = {
                     if (PV.isObject(options) === false) {
                         options = {};
                     }
-                    promises.push(jsapi.mongoConn.collection(collectionName).ensureIndex(keys, options));
+                    promises.push(jsapi.mongoConnDb.collection(collectionName).ensureIndex(keys, options));
                 }
             });
         } else if (PV.isObject(indices)) {
@@ -515,7 +516,7 @@ module.exports = {
                         keys[index[0]] = index[1];
                     }
 
-                    promises.push(jsapi.mongoConn.collection(collectionName).ensureIndex(keys, options));
+                    promises.push(jsapi.mongoConnDb.collection(collectionName).ensureIndex(keys, options));
                 }
             }
         }
@@ -574,7 +575,7 @@ module.exports = {
         lookupDuplicate = [];
 
         var promises = [];
-        promises.push(jsapi.mongoConn.collection(sourceCollectionName).indexInformation());
+        promises.push(jsapi.mongoConnDb.collection(sourceCollectionName).indexInformation());
         promises.push(this.createCollection(jsapi, tempLookupCollection, true, indices));
 
         return Promise.all(promises).then(function(results) {
@@ -596,7 +597,7 @@ module.exports = {
             var promises = [];
             promises.push(this.getAggregateProjectMapping(jsapi, sourceCollectionName));
             promises.push(this.createCollection(jsapi, tempSourceCollection, true, results[0]));
-            promises.push(jsapi.mongoConn.collection(lookupCollectionName).aggregate(pipeline, {
+            promises.push(jsapi.mongoConnDb.collection(lookupCollectionName).aggregate(pipeline, {
                 allowDiskUse: true
             }));
 
@@ -653,7 +654,7 @@ module.exports = {
                 $out: tempSourceCollection
             });
 
-            return jsapi.mongoConn.collection(sourceCollectionName).aggregate(pipeline, {
+            return jsapi.mongoConnDb.collection(sourceCollectionName).aggregate(pipeline, {
                 allowDiskUse: true
             });
         }.bind(this)).then(function() {
@@ -662,7 +663,7 @@ module.exports = {
             promises.push(this.dropCollection(jsapi, tempLookupCollection));
             promises.push(this.dropCollection(jsapi, sourceCollectionName));
 
-            var bulk = jsapi.mongoConn.collection(tempSourceCollection).initializeOrderedBulkOp();
+            var bulk = jsapi.mongoConnDb.collection(tempSourceCollection).initializeOrderedBulkOp();
             for (var lookupField in lookupInfo) {
                 var lookup = lookupInfo[lookupField];
                 var lookupFieldKey = PV.createHash(lookupField + '3_' + id, 32);
@@ -704,7 +705,7 @@ module.exports = {
             }
             return Promise.all(promises);
         }.bind(this)).then(function() {
-            return jsapi.mongoConn.collection(tempSourceCollection).rename(sourceCollectionName);
+            return jsapi.mongoConnDb.collection(tempSourceCollection).rename(sourceCollectionName);
         }.bind(this));
     },
 
@@ -749,7 +750,7 @@ module.exports = {
         if (PV.isObject(projection) === false) {
             projection = {};
         }
-        return jsapi.mongoConn.collection(collectionName).find(filter, projection).toArray();
+        return jsapi.mongoConnDb.collection(collectionName).find(filter, { projection: projection }).toArray();
     },
 
     copy: function(jsapi, sourceCollection, targetCollection, filter, projection, overwriteKey) {
@@ -761,8 +762,8 @@ module.exports = {
         }
         let batchSize = 2000;
         return new Promise(function(resolve, reject) {
-            let bulk = jsapi.mongoConn.collection(targetCollection).initializeOrderedBulkOp();
-            jsapi.mongoConn.collection(sourceCollection).find(filter, projection, async function(err, cursor){
+            let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
+            jsapi.mongoConnDb.collection(sourceCollection).find(filter, { projection: projection }, async function(err, cursor){
                 if (err) {
                     reject(err);
                 }
@@ -770,7 +771,7 @@ module.exports = {
                     let item = await cursor.next();
                     if (bulk.length > batchSize) {
                         await this.bulkExecute(bulk);
-                        bulk = jsapi.mongoConn.collection(targetCollection).initializeOrderedBulkOp();
+                        bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
                     }
 
                     if (PV.isString(overwriteKey)) {
@@ -795,11 +796,11 @@ module.exports = {
         }
         let batchSize = 2000;
         return new Promise(async function(resolve, reject) {
-            let count = await jsapi.mongoConn.collection(sourceCollection).find(filter).count();
+            let count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
             while (count > 0) {
                 let insertedIds = [];
-                let sourceDocs = await jsapi.mongoConn.collection(sourceCollection).find(filter).limit(batchSize).toArray();
-                let bulk = jsapi.mongoConn.collection(targetCollection).initializeUnorderedBulkOp();
+                let sourceDocs = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).limit(batchSize).toArray();
+                let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeUnorderedBulkOp();
                 sourceDocs.forEach(function(doc) {
                     insertedIds.push(doc._id);
                     if (cleanId === true) {
@@ -810,8 +811,8 @@ module.exports = {
                 if (bulk.length > 0) {
                     await this.bulkExecute(bulk);
                 }
-                await jsapi.mongoConn.collection(sourceCollection).remove({ _id: { $in: insertedIds } });
-                count = await jsapi.mongoConn.collection(sourceCollection).find(filter).count();
+                await jsapi.mongoConnDb.collection(sourceCollection).remove({ _id: { $in: insertedIds } });
+                count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
             }
             if (PV.isEmptyObject(filter)) {
                 resolve(this.dropCollection(jsapi, sourceCollection));
@@ -831,7 +832,7 @@ module.exports = {
             return null;
         };
         var out = { out: { 'inline': 1 } };
-        return jsapi.mongoConn.collection(collectionName).mapReduce(mapFunction, reduceFunction, out).map(function(i) {
+        return jsapi.mongoConnDb.collection(collectionName).mapReduce(mapFunction, reduceFunction, out).map(function(i) {
             return i._id;
         });
     },
@@ -876,7 +877,7 @@ module.exports = {
                     };
                 }
                 if (PV.isObject(filter)) {
-                    promises.push(jsapi.mongoConn.collection(child).remove(filter));
+                    promises.push(jsapi.mongoConnDb.collection(child).remove(filter));
                 }
             }
 
@@ -887,7 +888,7 @@ module.exports = {
                 updateFilter._id = id;
             }
 
-            promises.push(jsapi.mongoConn.collection(collectionName).updateOne(updateFilter, {
+            promises.push(jsapi.mongoConnDb.collection(collectionName).updateOne(updateFilter, {
                 $set: set
             }));
 
@@ -1375,18 +1376,37 @@ module.exports = {
 
     createMongoDB: function(jsapi) {
         return new Promise(function(resolve, reject) {
-            if (PV.isObject(jsapi.mongoConn) === false) {
-                if (PV.isObject(jsapi.mongo) && PV.isString(jsapi.mongo.url)) {
+            if (PV.isObject(jsapi.mongoConn) && PV.isObject(jsapi.mongoConnDb) === false) {
+                try {
+                    jsapi.mongoConnDb = jsapi.mongoConn.db(jsapi.mongo.dbname);
+                    resolve(true);
+                } catch (err) {
+                    jsapi.mongoConn = null;
+                    jsapi.mongoConnDb = null;
+                    jsapi.logger.error(err);
+                    resolve(false);
+                }
+            } else if (PV.isObject(jsapi.mongoConn) === false && PV.isObject(jsapi.mongoConnDb) === false) {
+                if (PV.isObject(jsapi.mongo) && PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.dbname)) {
                     mongodb.MongoClient.connect(jsapi.mongo.url, {
                         useUnifiedTopology: true
                     }).then(function(dbconn) {
                         jsapi.mongoConn = dbconn;
-                        resolve(true);
+                        try {
+                            jsapi.mongoConnDb = jsapi.mongoConn.db(jsapi.mongo.dbname);
+                            resolve(true);
+                        } catch (err) {
+                            jsapi.mongoConn = null;
+                            jsapi.mongoConnDb = null;
+                            jsapi.logger.error(err);
+                            resolve(false);
+                        }
                     });
                 } else {
                     jsapi.mongoConn = null;
+                    jsapi.mongoConnDb = null;
                     jsapi.logger.error({
-                        message: 'Missing data source url',
+                        message: 'Missing data source url or database name',
                         code: 'No Connection'
                     });
                     resolve(false);
