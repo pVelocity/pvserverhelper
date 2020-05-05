@@ -478,50 +478,12 @@ module.exports = {
                 return false;
             }
         }).then(function(result) {
-            if (PV.isObject(result) && (PV.isArray(indices)) || PV.isObject(indices)) {
-                return this.createIndices(jsapi, collectionName, indices);
+            if (PV.isObject(result) && PV.isArray(indices)) {
+                return jsapi.mongoConnDb.collection(collectionName).createIndexes(indices);
             } else {
                 return result;
             }
         }.bind(this));
-    },
-
-    createIndices: function(jsapi, collectionName, indices) {
-        var promises = [];
-        var keys = {};
-        var options = {};
-
-        if (PV.isArray(indices)) {
-            indices.forEach(function(index) {
-                keys = index.keys;
-                if (PV.isObject(keys)) {
-                    options = index.options;
-                    if (PV.isObject(options) === false) {
-                        options = {};
-                    }
-                    promises.push(jsapi.mongoConnDb.collection(collectionName).ensureIndex(keys, options));
-                }
-            });
-        } else if (PV.isObject(indices)) {
-            for (var prop in indices) {
-                keys = {};
-                options = {};
-                if (prop !== '_id_') {
-                    var indicesInfo = indices[prop];
-
-                    options.name = prop;
-
-                    for (var i = 0; i < indicesInfo.length; i++) {
-                        var index = indicesInfo[i];
-                        keys[index[0]] = index[1];
-                    }
-
-                    promises.push(jsapi.mongoConnDb.collection(collectionName).ensureIndex(keys, options));
-                }
-            }
-        }
-
-        return Promise.all(promises);
     },
 
     // this replaces your source collection with a projection that includes the lookup fields
@@ -550,7 +512,7 @@ module.exports = {
         var tempSourceCollection = 'AG_' + PV.createHash(sourceCollectionName + '_' + id, 32);
 
         var lookupDuplicate = [];
-        var indices = [];
+        var indices1 = [];
 
         var project = {
             _id: 0
@@ -565,18 +527,18 @@ module.exports = {
             if (lookupDuplicate.indexOf(lookupKeyString) === -1) {
                 project[lookupKey] = PV.isString(lookup.lookupKey) ? '$' + lookup.lookupKey : lookup.lookupKey;
                 lookupDuplicate.push(lookupKeyString);
-                var keys = {};
-                keys[lookupKey] = 1;
-                indices.push({
-                    keys: keys
+                var key = {};
+                key[lookupKey] = 1;
+                indices1.push({
+                    key: key
                 });
             }
         }
         lookupDuplicate = [];
 
         var promises = [];
-        promises.push(jsapi.mongoConnDb.collection(sourceCollectionName).indexInformation());
-        promises.push(this.createCollection(jsapi, tempLookupCollection, true, indices));
+        promises.push(jsapi.mongoConnDb.collection(sourceCollectionName).indexInformation({ full: true }));
+        promises.push(this.createCollection(jsapi, tempLookupCollection, true, indices1));
 
         return Promise.all(promises).then(function(results) {
             var pipeline = [];
@@ -594,12 +556,21 @@ module.exports = {
                 $out: tempLookupCollection
             });
 
+            var indices2 = results[0];
+            indices2.forEach(function(index) {
+                for (var prop in index) {
+                    if (['name', 'unique', 'key'].includes(prop) === false) {
+                        delete index[prop];
+                    }
+                }
+            });
+
             var promises = [];
             promises.push(this.getAggregateProjectMapping(jsapi, sourceCollectionName));
-            promises.push(this.createCollection(jsapi, tempSourceCollection, true, results[0]));
+            promises.push(this.createCollection(jsapi, tempSourceCollection, true, indices2));
             promises.push(jsapi.mongoConnDb.collection(lookupCollectionName).aggregate(pipeline, {
                 allowDiskUse: true
-            }));
+            }).toArray());
 
             return Promise.all(promises);
         }.bind(this)).then(function(results) {
@@ -656,7 +627,7 @@ module.exports = {
 
             return jsapi.mongoConnDb.collection(sourceCollectionName).aggregate(pipeline, {
                 allowDiskUse: true
-            });
+            }).toArray();
         }.bind(this)).then(function() {
             var promises = [];
 
@@ -777,7 +748,7 @@ module.exports = {
                     if (PV.isString(overwriteKey)) {
                         let filter2 = {};
                         filter2[overwriteKey] = item[overwriteKey];
-                        bulk.find(filter2).remove();
+                        bulk.find(filter2).deleteOne();
                     }
                     bulk.insert(item);
                 }
@@ -811,7 +782,7 @@ module.exports = {
                 if (bulk.length > 0) {
                     await this.bulkExecute(bulk);
                 }
-                await jsapi.mongoConnDb.collection(sourceCollection).remove({ _id: { $in: insertedIds } });
+                await jsapi.mongoConnDb.collection(sourceCollection).deleteMany({ _id: { $in: insertedIds } });
                 count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
             }
             if (PV.isEmptyObject(filter)) {
@@ -831,9 +802,9 @@ module.exports = {
         var reduceFunction = function(key, stuff) {
             return null;
         };
-        var out = { out: { 'inline': 1 } };
-        return jsapi.mongoConnDb.collection(collectionName).mapReduce(mapFunction, reduceFunction, out).map(function(i) {
-            return i._id;
+        var options = { out: { 'inline': 1 } };
+        return jsapi.mongoConnDb.collection(collectionName).mapReduce(mapFunction, reduceFunction, options).then(function(result){
+            return result.map(i => i._id);
         });
     },
 
@@ -877,7 +848,7 @@ module.exports = {
                     };
                 }
                 if (PV.isObject(filter)) {
-                    promises.push(jsapi.mongoConnDb.collection(child).remove(filter));
+                    promises.push(jsapi.mongoConnDb.collection(child).deleteMany(filter));
                 }
             }
 
