@@ -34,7 +34,7 @@ var pvh = require('pvserverhelper');
 - [getLastComponentSelections](docs/pvserver/getLastComponentSelections.md)
 - [getGroupValueFromGroupFilters](docs/pvserver/getGroupValueFromGroupFilters.md)
 - [execServlet](docs/pvserver/execServlet.md)
-- [httpMethod](docs/pvserver/httpMethod.md)
+- [httpMethod](docs/pvserver/httpMethod.md) - Deprecated
 
 ### MongoDB
 - [setupMongoDBUrl](docs/MongoDB/setupMongoDBUrl.md)
@@ -43,7 +43,7 @@ var pvh = require('pvserverhelper');
 - [copy](docs/MongoDB/copy.md)
 - [move](docs/MongoDB/move.md)
 - [createCollection](docs/MongoDB/createCollection.md)
-- [createIndices](docs/MongoDB/createIndices.md)
+- [createIndices](docs/MongoDB/createIndices.md) - Deprecated
 - [dropCollection](docs/MongoDB/dropCollection.md)
 - [dropSomeCollections](docs/MongoDB/dropSomeCollections.md)
 - [cleanupChildren](docs/MongoDB/cleanupChildren.md)
