@@ -144,7 +144,9 @@ module.exports = {
                 err.message = 'No Relevant Message';
             }
 
-            if (PV.isString(err.code)) {
+            if (PV.isString(err.SCRIPT_ERROR_CODE)) {
+                err.code = err.SCRIPT_ERROR_CODE;
+            } else if (PV.isString(err.code)) {
                 err.code = err.code;
             } else if (PV.isString(err.Code)) {
                 err.code = err.Code;
