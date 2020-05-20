@@ -18,6 +18,7 @@ var pvh = require('pvserverhelper');
 
 ### pvserver
 - [login](docs/pvserver/login.md)
+- [loginWithUrl](docs/pvserver/loginWithUrl.md)
 - [loginWithSession](docs/pvserver/loginWithSession.md)
 - [getProviderModelInfo](docs/pvserver/getProviderModelInfo.md)
 - [getProviderModelUrl](docs/pvserver/getProviderModelUrl.md)

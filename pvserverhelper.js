@@ -911,8 +911,12 @@ module.exports = {
     },
 
     login: function(jsapi, protocol, host, port, username, password, credKey, sessionContext) {
-        jsapi.logger.info('Logging in ' + protocol + '://' + host + ':' + port);
-        jsapi.pv = new pvserver.PVServerAPI(protocol + '://' + host + ':' + port);
+        return this.loginWithUrl(protocol + '://' + host + ':' + port, username, password, credKey, sessionContext);
+    },
+
+    loginWithUrl: function(jsapi, url, username, password, credKey, sessionContext) {
+        jsapi.logger.info('Logging in ' + url);
+        jsapi.pv = new pvserver.PVServerAPI(url);
 
         let params = {
             User: username,

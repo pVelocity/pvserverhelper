@@ -1,9 +1,7 @@
-### ``login(jsapi, protocol, host, port, username, [password], [credKey], [sessionContext])``
-Calls the RPM API Login on ``protocol``://``host``:``port`` with ``username`` and ``password`` and ``credKey`` with ``sessionContext``.
+### ``loginWithUrl(jsapi, url, username, [password], [credKey], [sessionContext])``
+Calls the RPM API Login on ``url`` with ``username`` and ``password`` and ``credKey`` with ``sessionContext``.
 - `jsapi` `<Object>`
-- `protocol` `<String>`
-- `host` `<String>`
-- `port` `<Number>`
+- `url` `<String>`
 - `username` `<String>`
 - `password` `<String>`
 - `credKey` `<String>`
