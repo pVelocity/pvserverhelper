@@ -135,7 +135,7 @@ module.exports = {
             if (PV.isString(err.SCRIPT_ERROR_MSG)) {
                 err.message = err.SCRIPT_ERROR_MSG;
             } else if (PV.isString(err.message)) {
-                err.message = err.message;
+
             } else if (PV.isString(err.Message)) {
                 err.message = err.Message;
             } else if (PV.isFunction(err.message)) {
@@ -147,7 +147,7 @@ module.exports = {
             if (PV.isString(err.SCRIPT_ERROR_CODE)) {
                 err.code = err.SCRIPT_ERROR_CODE;
             } else if (PV.isString(err.code)) {
-                err.code = err.code;
+
             } else if (PV.isString(err.Code)) {
                 err.code = err.Code;
             } else if (PV.isFunction(err.code)) {
@@ -323,7 +323,6 @@ module.exports = {
 
             var options = {
                 method: 'GET',
-                uri: url,
                 gzip: true,
                 headers: {
                     'user-agent': 'pvserverhelper',
@@ -340,11 +339,21 @@ module.exports = {
                     options.headers[headerKey] = headers[headerKey];
                 }
             }
-            request(options).pipe(file).on('finish', function() {
-                resolve();
-            }).on('error', function(error) {
+
+            let reqClient = http;
+            if (url.startsWith('https')) {
+                reqClient = https;
+            }
+
+            let req = reqClient.request(url, options, function(res) {
+                res.pipe(file);
+                res.on('end', () => {
+                    resolve();
+                });
+            });
+            req.on('error', (e) => {
                 file.end();
-                reject(error);
+                reject(e);
             });
         });
     },
