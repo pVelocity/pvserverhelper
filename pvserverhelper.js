@@ -95,20 +95,26 @@ module.exports = {
 
   cleanup: function(jsapi) {
     if (jsapi.mongoConn) {
-      jsapi.mongoConn.close();
+      try {
+        jsapi.mongoConn.close();
+      } catch (ignore) {}
       jsapi.mongoConn = null;
       jsapi.mongoConnDb = null;
     }
 
     if (jsapi.sfdcConn) {
       if (PV.isObject(jsapi.sfdc) === false || jsapi.sfdc.isSession !== true) {
-        jsapi.sfdcConn.logout();
+        try {
+          jsapi.sfdcConn.logout();
+        } catch (ignore) {}
       }
       jsapi.sfdcConn = null;
     }
 
     if (jsapi.pv) {
-      jsapi.pv.logout();
+      try {
+        jsapi.pv.logout();
+      } catch (ignore) {}
       jsapi.pv = null;
     }
   },
