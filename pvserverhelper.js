@@ -5,14 +5,15 @@
 /* jshint node: true */
 /* jshint unused: false */
 
-var iconv = require('iconv-lite');
-var fs = require('fs');
-var mongodb = require('mongodb');
-var pvserver = require('pvserver');
-var Converter = require('csvtojson').Converter;
-var path = require('path');
-var http = require('http');
-var https = require('https');
+const iconv = require('iconv-lite');
+const fs = require('fs');
+const mongodb = require('mongodb');
+const pvserver = require('pvserver');
+const Converter = require('csvtojson').Converter;
+const path = require('path');
+const http = require('http');
+const https = require('https');
+const util = require('util');
 
 require('pvjs');
 
@@ -40,7 +41,7 @@ module.exports = {
 
   removeSessionJsapiObject: function(jsapi, sessionId) {
     if (PV.isObject(this.sessionJsapiCache[sessionId])) {
-      var cachedJsapi = this.sessionJsapiCache[sessionId];
+      let cachedJsapi = this.sessionJsapiCache[sessionId];
       cachedJsapi.isCached = null;
       delete this.sessionJsapiCache[sessionId];
       return cachedJsapi;
@@ -49,20 +50,20 @@ module.exports = {
     }
   },
 
-  cleanupForNonCached: function(jsapi) {
+  cleanupForNonCached: async function(jsapi) {
     if (PV.isBoolean(jsapi.isCached) && jsapi.isCached) {
 
     } else {
-      this.cleanup(jsapi);
+      await this.cleanup(jsapi);
     }
   },
 
   serializePromises: function(workFunction, workContext, workArray) {
-    var results = [];
+    let results = [];
     return new Promise(function(resolve, reject) {
-      var func = workFunction;
-      var context = workContext;
-      var next = function(curIndex) {
+      let func = workFunction;
+      let context = workContext;
+      let next = function(curIndex) {
         if (curIndex < workArray.length) {
           if (PV.isArray(workFunction)) {
             func = workFunction[curIndex];
@@ -93,10 +94,10 @@ module.exports = {
     });
   },
 
-  cleanup: function(jsapi) {
+  cleanup: async function(jsapi) {
     if (jsapi.mongoConn) {
       try {
-        jsapi.mongoConn.close();
+        await jsapi.mongoConn.close();
       } catch (ignore) {}
       jsapi.mongoConn = null;
       jsapi.mongoConnDb = null;
@@ -105,7 +106,8 @@ module.exports = {
     if (jsapi.sfdcConn) {
       if (PV.isObject(jsapi.sfdc) === false || jsapi.sfdc.isSession !== true) {
         try {
-          jsapi.sfdcConn.logout();
+          jsapi.sfdcConn.logoutAsync = util.promisify(jsapi.sfdcConn.logout);
+          await jsapi.sfdcConn.logoutAsync();
         } catch (ignore) {}
       }
       jsapi.sfdcConn = null;
@@ -113,7 +115,7 @@ module.exports = {
 
     if (jsapi.pv) {
       try {
-        jsapi.pv.logout();
+        await jsapi.pv.logout();
       } catch (ignore) {}
       jsapi.pv = null;
     }
@@ -129,11 +131,11 @@ module.exports = {
   },
 
   scriptErrHandler: function(jsapi, callback, passError) {
-    var fn = function(error) {
+    let fn = async function(error) {
 
-      this.cleanupForNonCached(jsapi);
+      await this.cleanupForNonCached(jsapi);
 
-      var err = error;
+      let err = error;
       if (error.json) {
         err = this.getPVStatus(error.json)
       }
@@ -182,8 +184,8 @@ module.exports = {
   },
 
   genericErrHandler: function(jsapi, callback, passError) {
-    var fn = function(err) {
-      this.cleanupForNonCached(jsapi);
+    let fn = async function(err) {
+      await this.cleanupForNonCached(jsapi);
 
       if (PV.isBoolean(passError) && passError) {
         callback(null, {
@@ -201,7 +203,7 @@ module.exports = {
   },
 
   getErrorMessage: function(err, includeTimestamp) {
-    var message = 'ERROR';
+    let message = 'ERROR';
     if (PV.isString(err.SCRIPT_ERROR_MSG)) {
       message = err.SCRIPT_ERROR_MSG;
     } else if (PV.isString(err.message)) {
@@ -210,7 +212,7 @@ module.exports = {
       message = err.Message;
     }
 
-    var timedMsg = '';
+    let timedMsg = '';
     if (includeTimestamp === true) {
       timedMsg = PV.getTimestamp() + ' - ' + message;
     } else {
@@ -226,7 +228,7 @@ module.exports = {
       };
     }
     jsapi.logger.info = function(message) {
-      var timedMsg = '';
+      let timedMsg = '';
       if (jsapi.logger.timestamp === true) {
         timedMsg = PV.getTimestamp() + ' - ' + message;
       } else {
@@ -241,7 +243,7 @@ module.exports = {
       }
     };
     jsapi.logger.error = function(error, throwError) {
-      var message = this.getErrorMessage(error, jsapi.logger.timestamp);
+      let message = this.getErrorMessage(error, jsapi.logger.timestamp);
 
       if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
         jsapi.logger.log('error', message);
@@ -255,16 +257,16 @@ module.exports = {
       }
     }.bind(this);
     jsapi.logger.startTime = function(message) {
-      var timerObj = {
+      let timerObj = {
         startTime: new Date(),
         message: message
       };
       return timerObj;
     };
     jsapi.logger.endTime = function(timerObj) {
-      var timedMsg = timerObj.message;
-      var endTime = new Date();
-      var elapsedTime = (endTime - timerObj.startTime) / 1e3;
+      let timedMsg = timerObj.message;
+      let endTime = new Date();
+      let elapsedTime = (endTime - timerObj.startTime) / 1e3;
       timedMsg = timedMsg + ' - ElaspedTime: ' + elapsedTime + 's';
       if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
         jsapi.logger.log('TIMER', timedMsg);
@@ -278,8 +280,8 @@ module.exports = {
 
   convertFile: function(source, target, options, decoding, encoding) {
     return new Promise(function(resolve, reject) {
-      var rd = fs.createReadStream(source);
-      var wr = fs.createWriteStream(target);
+      let rd = fs.createReadStream(source);
+      let wr = fs.createWriteStream(target);
 
       if (PV.isObject(options) === false) {
         options = {};
@@ -290,7 +292,7 @@ module.exports = {
   },
 
   convertStream: function(rd, wr, successCallback, failureCallback, options, decoding, encoding) {
-    var converter = null;
+    let converter = null;
     if (PV.isObject(options)) {
       converter = new Converter(options);
     }
@@ -327,7 +329,7 @@ module.exports = {
     return new Promise(function(resolve, reject) {
       let file = fs.createWriteStream(dest);
 
-      var options = {
+      let options = {
         method: 'GET',
         gzip: true,
         headers: {
@@ -341,7 +343,7 @@ module.exports = {
         }
       };
       if (PV.isObject(headers)) {
-        for (var headerKey in headers) {
+        for (let headerKey in headers) {
           options.headers[headerKey] = headers[headerKey];
         }
       }
@@ -366,7 +368,7 @@ module.exports = {
 
   execServlet: function(jsapi, headers, operation, params) {
     return new Promise(function(resolve, reject) {
-      var options = {
+      let options = {
         headers: {
           'user-agent': 'pvserverhelper',
           'content-type': 'application/x-www-form-urlencoded',
@@ -376,16 +378,16 @@ module.exports = {
       };
 
       if (PV.isObject(headers)) {
-        for (var headerKey in headers) {
+        for (let headerKey in headers) {
           options.headers[headerKey] = headers[headerKey];
         }
       }
 
-      var url = jsapi.pv.urlScheme + '://' + jsapi.pv.hostName + ':' + jsapi.pv.hostPort + '/admin/' + operation;
+      let url = jsapi.pv.urlScheme + '://' + jsapi.pv.hostName + ':' + jsapi.pv.hostPort + '/admin/' + operation;
 
       if (PV.isObject(params)) {
-        var args = [];
-        for (var paramKey in params) {
+        let args = [];
+        for (let paramKey in params) {
           args.push(paramKey + '=' + params[paramKey]);
         }
         url = url + '?' + args.join('&');
@@ -421,7 +423,7 @@ module.exports = {
   exec: function(jsapi, cmd, options) {
     return new Promise(function(resolve, reject) {
       try {
-        var exec = require('child_process').exec;
+        let exec = require('child_process').exec;
         if (PV.isObject(options) === false) {
           options = {
             maxBuffer: 1024 * 500
@@ -459,7 +461,7 @@ module.exports = {
 
   dropSomeCollections: function(jsapi, matchFunction) {
     return jsapi.mongoConnDb.listCollections({}).toArray().then(function(result) {
-      var promises = [];
+      let promises = [];
       result.forEach(function(collection) {
         if (matchFunction(collection.name)) {
           promises.push(jsapi.mongoConnDb.collection(collection.name).drop());
@@ -510,7 +512,7 @@ module.exports = {
   // defaultValue: a $set value used to set a default for the lookupField
   // rename: field that the lookup will be set to, defaulted to lookupField
   // tag: field that will be tagged true if lookup applied
-  // var lookupInfo = {
+  // let lookupInfo = {
   //     'lookupField': {
   //         sourceKey: 'sourceKey',
   //         lookupKey: {
@@ -524,27 +526,27 @@ module.exports = {
   //     }
   // };
   aggregateLookup: function(jsapi, sourceCollectionName, lookupCollectionName, lookupInfo, lookupOperations) {
-    var id = PV.getTimestamp() + Math.random();
-    var tempLookupCollection = 'AG_' + PV.createHash(lookupCollectionName + '_' + id, 32);
-    var tempSourceCollection = 'AG_' + PV.createHash(sourceCollectionName + '_' + id, 32);
+    let id = PV.getTimestamp() + Math.random();
+    let tempLookupCollection = 'AG_' + PV.createHash(lookupCollectionName + '_' + id, 32);
+    let tempSourceCollection = 'AG_' + PV.createHash(sourceCollectionName + '_' + id, 32);
 
-    var lookupDuplicate = [];
-    var indices1 = [];
+    let lookupDuplicate = [];
+    let indices1 = [];
 
-    var project = {
+    let project = {
       _id: 0
     };
-    for (var lookupField in lookupInfo) {
+    for (let lookupField in lookupInfo) {
       project[lookupField] = '$' + lookupField;
 
-      var lookup = lookupInfo[lookupField];
-      var lookupKeyString = JSON.stringify(lookup.lookupKey);
+      let lookup = lookupInfo[lookupField];
+      let lookupKeyString = JSON.stringify(lookup.lookupKey);
 
-      var lookupKey = PV.createHash(lookupKeyString + '1_' + id, 32);
+      let lookupKey = PV.createHash(lookupKeyString + '1_' + id, 32);
       if (lookupDuplicate.indexOf(lookupKeyString) === -1) {
         project[lookupKey] = PV.isString(lookup.lookupKey) ? '$' + lookup.lookupKey : lookup.lookupKey;
         lookupDuplicate.push(lookupKeyString);
-        var key = {};
+        let key = {};
         key[lookupKey] = 1;
         indices1.push({
           key: key
@@ -553,12 +555,12 @@ module.exports = {
     }
     lookupDuplicate = [];
 
-    var promises = [];
+    let promises = [];
     promises.push(jsapi.mongoConnDb.collection(sourceCollectionName).indexInformation({ full: true }));
     promises.push(this.createCollection(jsapi, tempLookupCollection, true, indices1));
 
     return Promise.all(promises).then(function(results) {
-      var pipeline = [];
+      let pipeline = [];
       if (PV.isArray(lookupOperations)) {
         lookupOperations.forEach(function(operation) {
           pipeline.push(operation);
@@ -573,16 +575,16 @@ module.exports = {
         $out: tempLookupCollection
       });
 
-      var indices2 = results[0];
+      let indices2 = results[0];
       indices2.forEach(function(index) {
-        for (var prop in index) {
+        for (let prop in index) {
           if (['name', 'unique', 'key'].includes(prop) === false) {
             delete index[prop];
           }
         }
       });
 
-      var promises = [];
+      let promises = [];
       promises.push(this.getAggregateProjectMapping(jsapi, sourceCollectionName));
       promises.push(this.createCollection(jsapi, tempSourceCollection, true, indices2));
       promises.push(jsapi.mongoConnDb.collection(lookupCollectionName).aggregate(pipeline, {
@@ -591,20 +593,20 @@ module.exports = {
 
       return Promise.all(promises);
     }.bind(this)).then(function(results) {
-      var project = results[0];
+      let project = results[0];
 
-      var pipelineLookup = [];
-      var pipelineUnwind = [];
+      let pipelineLookup = [];
+      let pipelineUnwind = [];
 
-      var tempKeyDuplicate = [];
+      let tempKeyDuplicate = [];
 
-      for (var lookupField in lookupInfo) {
-        var lookup = lookupInfo[lookupField];
-        var lookupKeyString = JSON.stringify(lookup.lookupKey);
+      for (let lookupField in lookupInfo) {
+        let lookup = lookupInfo[lookupField];
+        let lookupKeyString = JSON.stringify(lookup.lookupKey);
 
-        var lookupKey = PV.createHash(lookupKeyString + '1_' + id, 32);
-        var tempKey = PV.createHash(lookup.sourceKey + '2_' + id, 32);
-        var lookupFieldKey = PV.createHash(lookupField + '3_' + id, 32);
+        let lookupKey = PV.createHash(lookupKeyString + '1_' + id, 32);
+        let tempKey = PV.createHash(lookup.sourceKey + '2_' + id, 32);
+        let lookupFieldKey = PV.createHash(lookupField + '3_' + id, 32);
         if (lookupDuplicate.indexOf(lookupKeyString) === -1 && tempKeyDuplicate.indexOf(tempKey) === -1) {
           pipelineLookup.push({
             $lookup: {
@@ -633,7 +635,7 @@ module.exports = {
         }
       }
 
-      var pipeline = pipelineLookup.concat(pipelineUnwind);
+      let pipeline = pipelineLookup.concat(pipelineUnwind);
 
       pipeline.push({
         $project: project
@@ -646,23 +648,23 @@ module.exports = {
         allowDiskUse: true
       }).toArray();
     }.bind(this)).then(function() {
-      var promises = [];
+      let promises = [];
 
       promises.push(this.dropCollection(jsapi, tempLookupCollection));
       promises.push(this.dropCollection(jsapi, sourceCollectionName));
 
-      var bulk = jsapi.mongoConnDb.collection(tempSourceCollection).initializeOrderedBulkOp();
-      for (var lookupField in lookupInfo) {
-        var lookup = lookupInfo[lookupField];
-        var lookupFieldKey = PV.createHash(lookupField + '3_' + id, 32);
+      let bulk = jsapi.mongoConnDb.collection(tempSourceCollection).initializeOrderedBulkOp();
+      for (let lookupField in lookupInfo) {
+        let lookup = lookupInfo[lookupField];
+        let lookupFieldKey = PV.createHash(lookupField + '3_' + id, 32);
 
-        var defaultValue = lookup.defaultValue;
+        let defaultValue = lookup.defaultValue;
         if (PV.isNull(defaultValue) === false && PV.isUndefined(defaultValue) === false) {
-          var filter = {};
+          let filter = {};
           filter[lookupFieldKey] = {
             $exists: false
           };
-          var set = {};
+          let set = {};
           set[PV.isString(lookup.rename) ? lookup.rename : lookupField] = defaultValue;
 
           bulk.find(filter).update({
@@ -670,19 +672,19 @@ module.exports = {
           });
         }
 
-        var rename = {};
+        let rename = {};
         rename[lookupFieldKey] = PV.isString(lookup.rename) ? lookup.rename : lookupField;
 
-        var filter2 = {};
+        let filter2 = {};
         filter2[lookupFieldKey] = {
           $exists: true
         };
 
-        var update = {
+        let update = {
           $rename: rename
         };
         if (PV.isString(lookup.tag)) {
-          var set = {};
+          let set = {};
           set[lookup.tag] = true;
           update.$set = set;
         }
@@ -698,17 +700,17 @@ module.exports = {
   },
 
   createExpressionMapping: function(objectOrArray, accumulator, aggregated, include_id) {
-    var arr = null;
+    let arr = null;
     if (PV.isArray(objectOrArray)) {
       arr = objectOrArray;
     } else if (PV.isObject(objectOrArray)) {
       arr = Object.keys(objectOrArray);
     }
 
-    var project = {};
+    let project = {};
     if (PV.isArray(arr)) {
       arr.forEach(function(element) {
-        var value = null;
+        let value = null;
         if (aggregated === true) {
           value = '$_id.' + element;
         } else {
@@ -729,7 +731,7 @@ module.exports = {
   },
 
   find: function(jsapi, collectionName, id, projection) {
-    var filter = {};
+    let filter = {};
     if (PV.isString(id)) {
       filter._id = new mongodb.ObjectId.createFromHexString(id);
     } else if (PV.isObject(id)) {
@@ -751,7 +753,9 @@ module.exports = {
     let batchSize = 2000;
     return new Promise(function(resolve, reject) {
       let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
-      jsapi.mongoConnDb.collection(sourceCollection).find(filter, { projection: projection }, async function(err, cursor) {
+      jsapi.mongoConnDb.collection(sourceCollection).find(filter, {
+        projection: projection
+      }, async function(err, cursor) {
         if (err) {
           reject(err);
         }
@@ -811,15 +815,15 @@ module.exports = {
   },
 
   getProperties: function(jsapi, collectionName) {
-    var mapFunction = function() {
-      for (var key in this) {
+    let mapFunction = function() {
+      for (let key in this) {
         emit(key, null);
       }
     };
-    var reduceFunction = function(key, stuff) {
+    let reduceFunction = function(key, stuff) {
       return null;
     };
-    var options = { out: { 'inline': 1 } };
+    let options = { out: { 'inline': 1 } };
     return jsapi.mongoConnDb.collection(collectionName).mapReduce(mapFunction, reduceFunction, options).then(function(result) {
       return result.map(i => i._id);
     });
@@ -835,24 +839,24 @@ module.exports = {
   },
 
   cleanupChildren: function(jsapi, collectionName, id, childrenMap) {
-    var projection = {};
-    for (var child in childrenMap) {
+    let projection = {};
+    for (let child in childrenMap) {
       projection[childrenMap[child]] = 1;
     }
 
     return this.find(jsapi, collectionName, id, projection).then(function(result) {
-      var promises = [];
-      var set = {};
+      let promises = [];
+      let set = {};
 
-      for (var child in childrenMap) {
-        var targets = result[0][childrenMap[child]];
+      for (let child in childrenMap) {
+        let targets = result[0][childrenMap[child]];
         if (PV.isArray(targets)) {
           set[childrenMap[child]] = [];
         } else {
           set[childrenMap[child]] = null;
         }
 
-        var filter = null;
+        let filter = null;
         if (PV.isArray(targets)) {
           filter = {
             _id: {
@@ -869,7 +873,7 @@ module.exports = {
         }
       }
 
-      var updateFilter = {};
+      let updateFilter = {};
       if (PV.isString(id)) {
         updateFilter._id = new mongodb.ObjectId.createFromHexString(id);
       } else if (PV.isObject(id)) {
@@ -925,13 +929,19 @@ module.exports = {
     }
   },
 
-  login: function(jsapi, protocol, host, port, username, password, credKey, sessionContext) {
-    return this.loginWithUrl(protocol + '://' + host + ':' + port, username, password, credKey, sessionContext);
+  login: function(jsapi, protocol, host, port, username, password, credKey, sessionContext, options) {
+    return this.loginWithUrl(protocol + '://' + host + ':' + port, username, password, credKey, sessionContext, options);
   },
 
-  loginWithUrl: function(jsapi, url, username, password, credKey, sessionContext) {
+  loginWithUrl: function(jsapi, url, username, password, credKey, sessionContext, options) {
     jsapi.logger.info('Logging in ' + url);
     jsapi.pv = new pvserver.PVServerAPI(url);
+
+    if (PV.isObject(options)) {
+      if (PV.isNumber(options.timeOut)) {
+        jsapi.pv.timeOut = options.timeOut;
+      }
+    }
 
     let params = {
       User: username,
@@ -975,10 +985,15 @@ module.exports = {
     }.bind(this));
   },
 
-  loginWithSession: function(jsapi) {
+  loginWithSession: function(jsapi, options) {
     return new Promise(function(resolve, reject) {
       if (PV.isObject(jsapi.pv) === false) {
         jsapi.pv = new pvserver.PVServerAPI(jsapi.PVSession.engineSessionInfo.url);
+        if (PV.isObject(options)) {
+          if (PV.isNumber(options.timeOut)) {
+            jsapi.pv.timeOut = options.timeOut;
+          }
+        }
         jsapi.pv.login(null, null, jsapi.PVSession.engineSessionInfo.apiKey).then(function(resp) {
           resolve(true);
         }).catch(function(err) {
@@ -992,14 +1007,14 @@ module.exports = {
   },
 
   parseProviderModelUrl: function(url) {
-    var info = {};
+    let info = {};
 
-    var re = /:[\/][\/]([^\/]+)[\/]([^\/?]+)[?\/]?.*/;
-    var m = null;
+    let re = /:[\/][\/]([^\/]+)[\/]([^\/?]+)[?\/]?.*/;
+    let m = null;
     if ((m = re.exec(url)) !== null) {
-      var host = m[1].split('@');
+      let host = m[1].split('@');
       if (host.length > 1) {
-        var auth = host[0].split(':');
+        let auth = host[0].split(':');
         info.username = auth[0];
         info.password = auth[1];
         info.host = host[1];
@@ -1014,13 +1029,13 @@ module.exports = {
       info.dbname = null;
     }
 
-    var reOptions = /[?](.*)/;
+    let reOptions = /[?](.*)/;
     if ((m = reOptions.exec(url)) !== null) {
-      var allOptions = m[1];
-      var options = allOptions.split('&');
+      let allOptions = m[1];
+      let options = allOptions.split('&');
       info.options = {};
       options.forEach(function(opt) {
-        var opValues = opt.split('=');
+        let opValues = opt.split('=');
         info.options[opValues[0]] = opValues[1];
       });
     } else {
@@ -1031,7 +1046,7 @@ module.exports = {
   },
 
   getProviderModelInfo: function(jsapi, tag, params) {
-    var infoTag = null;
+    let infoTag = null;
     if (tag === 'MongoDB') {
       infoTag = 'mongo';
     } else if (tag === 'Salesforce') {
@@ -1043,20 +1058,21 @@ module.exports = {
     }
 
     try {
-      var sessionInfo = jsapi.PVSession.engineSessionInfo;
-      var providerModelInfo = sessionInfo.providerModelsByTag[tag];
-      var connectionInfo = null;
+      let sessionInfo = jsapi.PVSession.engineSessionInfo;
+      let providerModelInfo = sessionInfo.providerModelsByTag[tag];
+      let connectionInfo = null;
       if (PV.isArray(providerModelInfo)) {
-        var userId = (params.userId ? params.userId : sessionInfo.user);
-        var appName = params.appName;
-        var mongoDBHostName = params.mongoDBHostName;
-        var providerModelId = sessionInfo.providerModelId;
+        let userId = (params.userId ? params.userId : sessionInfo.user);
+        let appName = params.appName;
+        let mongoDBHostName = params.mongoDBHostName;
+        let providerModelId = sessionInfo.providerModelId;
         if (PV.isString(userId) && (
             (PV.isString(appName) && PV.isString(mongoDBHostName)) ||
             (PV.isString(providerModelId)))) {
-          for (var i = 0; i < providerModelInfo.length; i++) {
+          for (let i = 0; i < providerModelInfo.length; i++) {
             if (providerModelInfo[i].userId === userId && (
-                (providerModelInfo[i].appName === appName && providerModelInfo[i].mongoDBHostName === mongoDBHostName) ||
+                (providerModelInfo[i].appName === appName &&
+                  providerModelInfo[i].mongoDBHostName === mongoDBHostName) ||
                 (providerModelInfo[i].modelId === providerModelId))) {
               connectionInfo = providerModelInfo[i];
             }
@@ -1067,7 +1083,7 @@ module.exports = {
       }
 
       if (PV.isObject(connectionInfo)) {
-        for (var prop in connectionInfo) {
+        for (let prop in connectionInfo) {
           jsapi[infoTag][prop] = connectionInfo[prop];
         }
       }
@@ -1078,8 +1094,8 @@ module.exports = {
         jsapi.logger.info(infoTag + ' OpRequest');
       } catch (e2) {
         try {
-          var domain = tag.toUpperCase();
-          var models = JSON.parse(params.ProviderModels);
+          let domain = tag.toUpperCase();
+          let models = JSON.parse(params.ProviderModels);
           jsapi[infoTag].modelId = models[domain];
           jsapi.logger.info(infoTag + ' ProviderModels');
         } catch (e2) {}
@@ -1097,7 +1113,7 @@ module.exports = {
       if (PV.isString(jsapi.sfdc.modelId)) {
         resolve(true);
       } else {
-        var dataSetQuery = {
+        let dataSetQuery = {
           'Type': 'Salesforce',
           'KeyValue': [{
             'Key': 'username',
@@ -1113,7 +1129,7 @@ module.exports = {
 
         jsapi.logger.info('Creating provider model with ' + username + ' with ' + dataSetId);
         return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-          var status = this.getPVStatus(resp);
+          let status = this.getPVStatus(resp);
           jsapi.sfdc.modelId = status.ModelId;
           resolve(true);
         }.bind(this)).catch(function(err) {
@@ -1132,7 +1148,7 @@ module.exports = {
       if (PV.isString(jsapi.sfdc.modelId)) {
         resolve(true);
       } else {
-        var dataSetQuery = {
+        let dataSetQuery = {
           'Type': 'Salesforce',
           'KeyValue': [{
             'Key': 'dataSetId',
@@ -1148,7 +1164,7 @@ module.exports = {
 
         jsapi.logger.info('Creating provider model with access_token on ' + instance_url + ' with ' + dataSetId);
         return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-          var status = this.getPVStatus(resp);
+          let status = this.getPVStatus(resp);
           jsapi.sfdc.modelId = status.ModelId;
           resolve(true);
         }.bind(this)).catch(function(err) {
@@ -1171,7 +1187,7 @@ module.exports = {
       } else {
         jsapi.logger.info('Creating provider model with ' + username + ' for ' + appName + ' accessing dataSetId ' + dataSetId);
 
-        var dataSetQuery = {
+        let dataSetQuery = {
           'Type': 'MongoDB',
           'KeyValue': [{
             'Key': 'userId',
@@ -1185,7 +1201,7 @@ module.exports = {
           }]
         };
         return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-          var status = this.getPVStatus(resp);
+          let status = this.getPVStatus(resp);
           jsapi.mongo.modelId = status.ModelId;
           jsapi.logger.info('Getting provider model url with ' + status.ModelId);
           resolve(this.getProviderModelUrl(jsapi, options));
@@ -1193,7 +1209,7 @@ module.exports = {
           jsapi.logger.error(this.getPVStatus(err.json), false);
           jsapi.logger.info('Failed to get provider model url with dataSetId ' + dataSetId);
 
-          var dataSetQuery = {
+          let dataSetQuery = {
             'Type': 'MongoDB',
             'KeyValue': [{
               'Key': 'userId',
@@ -1208,7 +1224,7 @@ module.exports = {
           };
           jsapi.logger.info('Attempting with ' + username + ' for ' + appName + ' accessing mongoDBHostName ' + dataSetId);
           return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-            var status = this.getPVStatus(resp);
+            let status = this.getPVStatus(resp);
             jsapi.mongo.modelId = status.ModelId;
             jsapi.logger.info('Getting provider model url with ' + status.ModelId);
             resolve(this.getProviderModelUrl(jsapi, options));
@@ -1230,13 +1246,13 @@ module.exports = {
         return jsapi.pv.sendRequest('GetProviderModelUrl', {
           'ProfitModel': jsapi.mongo.modelId
         }).then(function(resp) {
-          var status = this.getPVStatus(resp);
-          var info = this.parseProviderModelUrl(status.Url);
+          let status = this.getPVStatus(resp);
+          let info = this.parseProviderModelUrl(status.Url);
 
           jsapi.mongo.host = info.host;
           jsapi.mongo.dbname = info.dbname;
 
-          var optionsStr = PV.convertObjectToStr(options);
+          let optionsStr = PV.convertObjectToStr(options);
           if (optionsStr !== '') {
             if (status.Url.indexOf('?') === -1) {
               optionsStr = '?' + optionsStr;
@@ -1299,7 +1315,7 @@ module.exports = {
         if (PV.isString(serverHost) && PV.isString(database)) {
           jsapi.mongo.host = serverHost;
           jsapi.mongo.dbname = database;
-          var arr = [];
+          let arr = [];
           arr.push('mongodb://');
 
           if (PV.isString(serverUserId)) {
@@ -1323,11 +1339,11 @@ module.exports = {
           }
           arr.push('/' + database);
 
-          var optionsStr = null;
+          let optionsStr = null;
           if (PV.isString(serverAuthDatabase)) {
-            var optionsObj = {};
+            let optionsObj = {};
             if (PV.isObject(options)) {
-              for (var k in options) {
+              for (let k in options) {
                 optionsObj[k] = options[k];
               }
             }
@@ -1410,7 +1426,7 @@ module.exports = {
   },
 
   getEntityGroupsAndFields: function(entity, entityArray) {
-    var result = null;
+    let result = null;
     entityArray.forEach(function(obj) {
       if (obj.Name === entity) {
         result = obj;
@@ -1423,7 +1439,7 @@ module.exports = {
   },
 
   convertGroupOrFieldArrayForQueryParams: function(arr) {
-    var uniqueArr = arr.filter(function(elem, index, self) {
+    let uniqueArr = arr.filter(function(elem, index, self) {
       if (PV.isString(elem)) {
         return index === self.indexOf(elem);
       } else if (PV.isObject(elem) && PV.isString(elem.text) && PV.isString(elem.attrs)) {
@@ -1433,7 +1449,7 @@ module.exports = {
       }
     });
 
-    var newArray = [];
+    let newArray = [];
     uniqueArr.forEach(function(elem) {
       if (PV.isString(elem)) {
         newArray.push({
@@ -1459,11 +1475,11 @@ module.exports = {
       not = false;
     }
     relationshipPatterns.forEach(function(pattern) {
-      var relationPattern = entity + '_' + pattern;
-      var reg = null;
+      let relationPattern = entity + '_' + pattern;
+      let reg = null;
       eval('reg=/' + relationPattern + '.+/i');
-      var groups = meta.Groups;
-      var i = 0;
+      let groups = meta.Groups;
+      let i = 0;
       do {
         if (reg.test(groups[i])) {
           if (not) {
@@ -1480,8 +1496,8 @@ module.exports = {
         }
       } while (i < groups.length);
 
-      var fields = meta.Fields;
-      var j = 0;
+      let fields = meta.Fields;
+      let j = 0;
       do {
         if (reg.test(fields[j])) {
           if (not) {
@@ -1501,9 +1517,9 @@ module.exports = {
   },
 
   getGroupsOrFieldsFromQueryParams: function(groupsOrFieldsParams) {
-    var groupsOrFields = [];
+    let groupsOrFields = [];
     if (PV.isObject(groupsOrFieldsParams)) {
-      var values = null;
+      let values = null;
       if (groupsOrFieldsParams.hasOwnProperty('Group')) {
         values = PV.ensureArray(groupsOrFieldsParams.Group);
       } else if (groupsOrFieldsParams.hasOwnProperty('Field')) {
@@ -1528,23 +1544,23 @@ module.exports = {
   },
 
   getGroupValueFromQueryParams: function(queryParams, objectName, groupName) {
-    var result = null;
-    var regexp = /^([^=]+)=[']([^']+)[']$/i;
+    let result = null;
+    let regexp = /^([^=]+)=[']([^']+)[']$/i;
     try {
-      var dp = queryParams.AndFilter;
+      let dp = queryParams.AndFilter;
       PV.ensureArray(dp.OrFilter).forEach(function(compTerm) {
-        var category = compTerm._attrs.category;
+        let category = compTerm._attrs.category;
         if ((!objectName || (!category || category === objectName))) {
           PV.ensureArray(compTerm.AndFilter).forEach(function(andTerm) {
             PV.ensureArray(andTerm.Filter).forEach(function(filterTerm) {
-              var term = filterTerm;
+              let term = filterTerm;
               if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
                 term = filterTerm.text;
               }
-              var matches = regexp.exec(term);
+              let matches = regexp.exec(term);
               if (matches) {
-                var group = matches[1];
-                var value = matches[2];
+                let group = matches[1];
+                let value = matches[2];
                 if (group === groupName && value !== '[object Object]') {
                   result = value;
                 }
@@ -1558,23 +1574,23 @@ module.exports = {
   },
 
   getGroupValuesFromQueryParams: function(queryParams, objectName, groupName) {
-    var result = [];
-    var regexp = /^([^=]+)=[']([^']+)[']$/i;
+    let result = [];
+    let regexp = /^([^=]+)=[']([^']+)[']$/i;
     try {
-      var dp = queryParams.AndFilter;
+      let dp = queryParams.AndFilter;
       PV.ensureArray(dp.OrFilter).forEach(function(compTerm) {
-        var category = compTerm._attrs.category;
+        let category = compTerm._attrs.category;
         if ((!objectName || (!category || category === objectName))) {
           PV.ensureArray(compTerm.AndFilter).forEach(function(andTerm) {
             PV.ensureArray(andTerm.Filter).forEach(function(filterTerm) {
-              var term = filterTerm;
+              let term = filterTerm;
               if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
                 term = filterTerm.text;
               }
-              var matches = regexp.exec(term);
+              let matches = regexp.exec(term);
               if (matches) {
-                var group = matches[1];
-                var value = matches[2];
+                let group = matches[1];
+                let value = matches[2];
                 if (group === groupName && value !== '[object Object]') {
                   result.push(value);
                 }
@@ -1588,14 +1604,14 @@ module.exports = {
   },
 
   getLastComponentSelections: function(components) {
-    var comps = PV.ensureArray(components);
+    let comps = PV.ensureArray(components);
 
-    var lastSelections = null;
-    for (var i = comps.length - 1; i >= 0; i--) {
-      var component = comps[i];
+    let lastSelections = null;
+    for (let i = comps.length - 1; i >= 0; i--) {
+      let component = comps[i];
 
       if (PV.isObject(component) && component.hasOwnProperty('Selection')) {
-        var selections = [];
+        let selections = [];
         if (PV.isArray(component.Selection)) {
           selections = component.Selection;
         } else {
@@ -1609,19 +1625,19 @@ module.exports = {
   },
 
   getGroupValueFromGroupFilters: function(selections, groupName) {
-    var values = [];
-    var groupFilter = null;
+    let values = [];
+    let groupFilter = null;
     if (PV.isArray(selections)) {
-      for (var i = 0; i < selections.length; i++) {
+      for (let i = 0; i < selections.length; i++) {
         if (PV.isObject(selections[i]) && selections[i].hasOwnProperty('GroupFilter')) {
           groupFilter = selections[i].GroupFilter;
-          var filters = [];
+          let filters = [];
           if (PV.isArray(groupFilter)) {
             filters = groupFilter;
           } else {
             filters.push(groupFilter);
           }
-          for (var j = 0; j < filters.length; j++) {
+          for (let j = 0; j < filters.length; j++) {
             groupFilter = filters[j];
             if (PV.isString(groupFilter.Group) && PV.isString(groupFilter.Value) && groupFilter.Group === groupName) {
               values.push(groupFilter.Value);
@@ -1638,7 +1654,7 @@ module.exports = {
   },
 
   getPVStatus: function(response) {
-    var PVStatus = null;
+    let PVStatus = null;
 
     if (PV.isObject(response)) {
       if (PV.isObject(response.PVResponse.PVStatus)) {
@@ -1651,10 +1667,10 @@ module.exports = {
     return PVStatus;
   },
   getResultCode: function(response) {
-    var code = null;
+    let code = null;
 
     if (response) {
-      var PVStatus = this.getPVStatus(response);
+      let PVStatus = this.getPVStatus(response);
       if (PVStatus) {
         code = PVStatus.Code;
       }
@@ -1663,10 +1679,10 @@ module.exports = {
     return code;
   },
   getResultMessage: function(response) {
-    var message = null;
+    let message = null;
 
     if (response) {
-      var PVStatus = this.getPVStatus(response);
+      let PVStatus = this.getPVStatus(response);
       if (PVStatus) {
         message = PVStatus.Message;
       }
@@ -1675,10 +1691,10 @@ module.exports = {
     return message;
   },
   getResultScriptMessage: function(response) {
-    var message = null;
+    let message = null;
 
     if (response) {
-      var PVStatus = this.getPVStatus(response);
+      let PVStatus = this.getPVStatus(response);
       if (PVStatus && PV.isString(PVStatus.SCRIPT_ERROR_MSG)) {
         message = PVStatus.SCRIPT_ERROR_MSG;
       }
@@ -1687,11 +1703,11 @@ module.exports = {
     return message;
   },
   isResultOk: function(response) {
-    var result = false;
+    let result = false;
 
     if (response) {
-      var codeText = this.getResultCode(response);
-      var message = this.getResultMessage(response);
+      let codeText = this.getResultCode(response);
+      let message = this.getResultMessage(response);
       if (codeText === 'RPM_PE_STATUS_OK' && message === 'Okay') {
         result = true;
       }
@@ -1699,10 +1715,10 @@ module.exports = {
     return result;
   },
   isResultTruncated: function(response) {
-    var result = false;
+    let result = false;
 
     if (response) {
-      var codeText = this.getResultCode(response);
+      let codeText = this.getResultCode(response);
       if (codeText === 'RPM_PE_QUERY_RESULT_TRUNCATED') {
         result = true;
       }
@@ -1710,11 +1726,11 @@ module.exports = {
     return result;
   },
   isResultTooLarge: function(response) {
-    var result = false;
+    let result = false;
 
     if (response) {
-      var codeText = this.getResultCode(response);
-      var messageText = this.getResultMessage(response);
+      let codeText = this.getResultCode(response);
+      let messageText = this.getResultMessage(response);
       if (codeText === 'RPM_PE_QUERY_FAILED' && messageText === 'Error: Request Entity Too Large: head') {
         result = true;
       }
@@ -1722,10 +1738,10 @@ module.exports = {
     return result;
   },
   isBulkUpsertInProgress: function(response) {
-    var result = false;
+    let result = false;
 
     if (response) {
-      var codeText = this.getResultCode(response);
+      let codeText = this.getResultCode(response);
       if (codeText === 'RPM_PE_QUERY_RESULT_OK_UPSERT_IN_PROGRESS' ||
         codeText === 'RPM_PE_QUERY_RESULT_TRUNCATED_UPSERT_IN_PROGRESS') {
         result = true;
@@ -1734,13 +1750,13 @@ module.exports = {
     return result;
   },
   listFiles: function(dir, conditionFunc) {
-    var files = [];
+    let files = [];
     if (fs.existsSync(dir)) {
-      var tempList = fs.readdirSync(dir);
-      for (var i = 0; i < tempList.length; i++) {
-        var filePath = path.join(dir, tempList[i]);
+      let tempList = fs.readdirSync(dir);
+      for (let i = 0; i < tempList.length; i++) {
+        let filePath = path.join(dir, tempList[i]);
         if (fs.lstatSync(filePath).isDirectory()) {
-          var subList = this.listFiles(filePath, conditionFunc);
+          let subList = this.listFiles(filePath, conditionFunc);
           files = files.concat(subList);
         } else {
           if (PV.isFunction(conditionFunc)) {
@@ -1757,10 +1773,10 @@ module.exports = {
   },
   readFirstLine: function(filePath, options) {
     return new Promise(function(resolve, reject) {
-      var rs = fs.createReadStream(filePath, options);
-      var txt = '';
-      var pos = 0;
-      var index;
+      let rs = fs.createReadStream(filePath, options);
+      let txt = '';
+      let pos = 0;
+      let index;
       rs.on('data', function(chunk) {
         index = chunk.indexOf('\n');
         txt += chunk;
