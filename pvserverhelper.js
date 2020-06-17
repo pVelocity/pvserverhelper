@@ -930,7 +930,7 @@ module.exports = {
   },
 
   login: function(jsapi, protocol, host, port, username, password, credKey, sessionContext, options) {
-    return this.loginWithUrl(protocol + '://' + host + ':' + port, username, password, credKey, sessionContext, options);
+    return this.loginWithUrl(jsapi, protocol + '://' + host + ':' + port, username, password, credKey, sessionContext, options);
   },
 
   loginWithUrl: function(jsapi, url, username, password, credKey, sessionContext, options) {
