@@ -139,18 +139,7 @@ module.exports = {
       if (error.json) {
         err = this.getPVStatus(error.json)
       }
-
-      if (PV.isString(err.SCRIPT_ERROR_MSG)) {
-        err.message = err.SCRIPT_ERROR_MSG;
-      } else if (PV.isString(err.message)) {
-
-      } else if (PV.isString(err.Message)) {
-        err.message = err.Message;
-      } else if (PV.isFunction(err.message)) {
-        err.message = err.message();
-      } else {
-        err.message = 'No Relevant Message';
-      }
+      err.message = this.getErrorMessage(err);
 
       if (PV.isString(err.SCRIPT_ERROR_CODE)) {
         err.code = err.SCRIPT_ERROR_CODE;
@@ -202,14 +191,22 @@ module.exports = {
     return fn;
   },
 
-  getErrorMessage: function(err, includeTimestamp) {
-    let message = 'ERROR';
+  getErrorMessage: function(error, includeTimestamp) {
+    let err = error;
+    if (error.json) {
+      err = this.getPVStatus(error.json);
+    }
+
     if (PV.isString(err.SCRIPT_ERROR_MSG)) {
       message = err.SCRIPT_ERROR_MSG;
     } else if (PV.isString(err.message)) {
       message = err.message;
     } else if (PV.isString(err.Message)) {
       message = err.Message;
+    } else if (PV.isFunction(err.message)) {
+      message = err.message();
+    } else {
+      message = 'No Relevant Message';
     }
 
     let timedMsg = '';
