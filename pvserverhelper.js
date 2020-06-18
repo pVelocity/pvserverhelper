@@ -197,6 +197,7 @@ module.exports = {
       err = this.getPVStatus(error.json);
     }
 
+    let message = '';
     if (PV.isString(err.SCRIPT_ERROR_MSG)) {
       message = err.SCRIPT_ERROR_MSG;
     } else if (PV.isString(err.message)) {
