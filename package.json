@@ -22,9 +22,9 @@
   "homepage": "https://github.com/pVelocity/pvserverhelper#readme",
   "dependencies": {
     "csvtojson": "^2.0.10",
-    "iconv-lite": "^0.5.1",
-    "mongodb": "^3.5.7",
-    "pvjs": "^1.0.20",
+    "iconv-lite": "^0.5.2",
+    "mongodb": "^3.5.9",
+    "pvjs": "^1.1.3",
     "pvserver": "^0.3.0"
   }
 }
