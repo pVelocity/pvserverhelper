@@ -1227,8 +1227,8 @@ module.exports = {
             jsapi.logger.info('Getting provider model url with ' + status.ModelId);
             resolve(this.getProviderModelUrl(jsapi, options));
           }.bind(this)).catch(function(err) {
-            jsapi.logger.error(this.getPVStatus(err.json));
-            resolve(false);
+            jsapi.logger.error(this.getPVStatus(err.json), false);
+            reject(false);
           }.bind(this));
         }.bind(this));
       }
