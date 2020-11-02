@@ -995,8 +995,8 @@ module.exports = {
         jsapi.pv.login(null, null, jsapi.PVSession.engineSessionInfo.apiKey).then(function(resp) {
           resolve(true);
         }).catch(function(err) {
-          jsapi.logger.error(this.getPVStatus(err.json));
-          resolve(false);
+          jsapi.logger.error(this.getPVStatus(err.json), false);
+          reject(this.getPVStatus(err.json));
         }.bind(this));
       } else {
         resolve(true);
@@ -1131,8 +1131,8 @@ module.exports = {
           jsapi.sfdc.modelId = status.ModelId;
           resolve(true);
         }.bind(this)).catch(function(err) {
-          jsapi.logger.error(this.getPVStatus(err.json));
-          resolve(false);
+          jsapi.logger.error(this.getPVStatus(err.json), false);
+          reject(this.getPVStatus(err.json));
         }.bind(this));
       }
     }.bind(this));
@@ -1166,8 +1166,8 @@ module.exports = {
           jsapi.sfdc.modelId = status.ModelId;
           resolve(true);
         }.bind(this)).catch(function(err) {
-          jsapi.logger.error(this.getPVStatus(err.json));
-          resolve(false);
+          jsapi.logger.error(this.getPVStatus(err.json), false);
+          reject(this.getPVStatus(err.json));
         }.bind(this));
       }
     }.bind(this));
@@ -1228,7 +1228,7 @@ module.exports = {
             resolve(this.getProviderModelUrl(jsapi, options));
           }.bind(this)).catch(function(err) {
             jsapi.logger.error(this.getPVStatus(err.json), false);
-            reject(false);
+            reject(this.getPVStatus(err.json));
           }.bind(this));
         }.bind(this));
       }
@@ -1285,7 +1285,6 @@ module.exports = {
               message: 'Unable to extract Mongo host from data source url',
               code: 'Parsing Error'
             });
-            resolve(false);
           }
         }.bind(this)).catch(function(err) {
           jsapi.mongo.url = null;
@@ -1294,8 +1293,8 @@ module.exports = {
           jsapi.mongo.options = null;
           jsapi.mongo.username = null;
           jsapi.mongo.password = null;
-          jsapi.logger.error(this.getPVStatus(err.json));
-          resolve(false);
+          jsapi.logger.error(this.getPVStatus(err.json), false);
+          reject(this.getPVStatus(err.json));
         }.bind(this));
       }
     }.bind(this));
@@ -1370,11 +1369,12 @@ module.exports = {
           jsapi.mongo.options = null;
           jsapi.mongo.username = null;
           jsapi.mongo.password = null;
-          jsapi.logger.error({
+          let err = {
             message: 'Missing data source url parameters',
             code: 'Bad Parameters'
-          });
-          resolve(false);
+          };
+          jsapi.logger.error(err, false);
+          reject(err);
         }
       }
     });
@@ -1389,8 +1389,8 @@ module.exports = {
         } catch (err) {
           jsapi.mongoConn = null;
           jsapi.mongoConnDb = null;
-          jsapi.logger.error(err);
-          resolve(false);
+          jsapi.logger.error(err, false);
+          reject(err);
         }
       } else if (PV.isObject(jsapi.mongoConn) === false && PV.isObject(jsapi.mongoConnDb) === false) {
         if (PV.isObject(jsapi.mongo) && PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.dbname)) {
@@ -1404,18 +1404,19 @@ module.exports = {
             } catch (err) {
               jsapi.mongoConn = null;
               jsapi.mongoConnDb = null;
-              jsapi.logger.error(err);
-              resolve(false);
+              jsapi.logger.error(err, false);
+              reject(err);
             }
           });
         } else {
           jsapi.mongoConn = null;
           jsapi.mongoConnDb = null;
-          jsapi.logger.error({
+          let err = {
             message: 'Missing data source url or database name',
             code: 'No Connection'
-          });
-          resolve(false);
+          };
+          jsapi.logger.error(err, false);
+          reject(err);
         }
       } else {
         resolve(true);
