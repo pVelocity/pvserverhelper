@@ -827,10 +827,40 @@ module.exports = {
     });
   },
 
-  getAggregateProjectMapping: function(jsapi, collectionName, filter) {
-    if (PV.isObject(filter) === false) {
-      filter = {};
-    }
+  getABOMProperties: function(jsapi, appName, objectName) {
+    return jsapi.mongoConnDb.collection('ABOM_Apps').find({
+      Name: appName
+    }).project({
+      _id: 1
+    }).toArray().then(function(appArr) {
+      let appId = appArr[0]._id;
+      return jsapi.mongoConnDb.collection('ABOM_Objects').find({
+        Name: objectName,
+        App: appId
+      }).project({
+        _id: 1
+      }).toArray();
+    }).then(function(objArr) {
+      let objId = objArr[0]._id;
+      return jsapi.mongoConnDb.collection('ABOM_Properties').find({
+        Object: objId,
+        Type: {
+          $nin: ['expr', 'abomPropertyType', 'function']
+        }
+      }).project({
+        _id: 1,
+        Name: 1
+      }).toArray();
+    }).then(function(propArr) {
+      let properties = {};
+      propArr.forEach(function(propObj) {
+        properties[propObj.Name] = propObj._id;
+      });
+      return properties;
+    });
+  },
+
+  getAggregateProjectMapping: function(jsapi, collectionName) {
     return this.getProperties(jsapi, collectionName).then(function(result) {
       return this.createExpressionMapping(result);
     }.bind(this));
