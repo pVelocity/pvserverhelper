@@ -240,6 +240,11 @@ module.exports = {
         console.log('INFO: ' + timedMsg);
       }
     };
+    jsapi.logger.infoAsync = function(message) {
+      return new Promise(function(resolve) {
+        resolve(jsapi.logger.info(message));
+      });
+    };
     jsapi.logger.error = function(error, throwError) {
       let message = this.getErrorMessage(error, jsapi.logger.timestamp);
 
@@ -254,6 +259,11 @@ module.exports = {
         throw error;
       }
     }.bind(this);
+    jsapi.logger.errorAsync = function(message) {
+      return new Promise(function(resolve) {
+        resolve(jsapi.logger.error(message));
+      });
+    };
     jsapi.logger.startTime = function(message) {
       let timerObj = {
         startTime: new Date(),
@@ -757,24 +767,28 @@ module.exports = {
         if (err) {
           reject(err);
         }
-        while (await cursor.hasNext()) {
-          let item = await cursor.next();
-          if (bulk.length > batchSize) {
-            await this.bulkExecute(bulk);
-            bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
-          }
+        try {
+          while (await cursor.hasNext()) {
+            let item = await cursor.next();
+            if (bulk.length > batchSize) {
+              await this.bulkExecute(bulk);
+              bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
+            }
 
-          if (PV.isString(overwriteKey)) {
-            let filter2 = {};
-            filter2[overwriteKey] = item[overwriteKey];
-            bulk.find(filter2).deleteOne();
+            if (PV.isString(overwriteKey)) {
+              let filter2 = {};
+              filter2[overwriteKey] = item[overwriteKey];
+              bulk.find(filter2).deleteOne();
+            }
+            bulk.insert(item);
           }
-          bulk.insert(item);
-        }
-        if (bulk.length > 0) {
-          resolve(this.bulkExecute(bulk));
-        } else {
-          resolve();
+          if (bulk.length > 0) {
+            resolve(this.bulkExecute(bulk));
+          } else {
+            resolve();
+          }
+        } catch (e) {
+          reject(e);
         }
       }.bind(this));
     }.bind(this));
@@ -786,28 +800,32 @@ module.exports = {
     }
     let batchSize = 2000;
     return new Promise(async function(resolve, reject) {
-      let count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
-      while (count > 0) {
-        let insertedIds = [];
-        let sourceDocs = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).limit(batchSize).toArray();
-        let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeUnorderedBulkOp();
-        sourceDocs.forEach(function(doc) {
-          insertedIds.push(doc._id);
-          if (cleanId === true) {
-            delete doc._id;
+      try {
+        let count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
+        while (count > 0) {
+          let insertedIds = [];
+          let sourceDocs = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).limit(batchSize).toArray();
+          let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeUnorderedBulkOp();
+          sourceDocs.forEach(function(doc) {
+            insertedIds.push(doc._id);
+            if (cleanId === true) {
+              delete doc._id;
+            }
+            bulk.insert(doc);
+          });
+          if (bulk.length > 0) {
+            await this.bulkExecute(bulk);
           }
-          bulk.insert(doc);
-        });
-        if (bulk.length > 0) {
-          await this.bulkExecute(bulk);
+          await jsapi.mongoConnDb.collection(sourceCollection).deleteMany({ _id: { $in: insertedIds } });
+          count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
         }
-        await jsapi.mongoConnDb.collection(sourceCollection).deleteMany({ _id: { $in: insertedIds } });
-        count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
-      }
-      if (PV.isEmptyObject(filter)) {
-        resolve(this.dropCollection(jsapi, sourceCollection));
-      } else {
-        resolve();
+        if (PV.isEmptyObject(filter)) {
+          resolve(this.dropCollection(jsapi, sourceCollection));
+        } else {
+          resolve();
+        }
+      } catch (e) {
+        reject(e);
       }
     }.bind(this));
   },
