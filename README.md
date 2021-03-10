@@ -72,6 +72,7 @@ var pvh = require('pvserverhelper');
 - [convertFile](docs/Other/convertFile.md)
 - [convertStream](docs/Other/convertStream.md)
 - [exec](docs/Other/exec.md)
+- [spawn](docs/Other/spawn.md)
 - [setCallbackTimeout](docs/Other/setCallbackTimeout.md)
 - [checkCallbackTimeout](docs/Other/checkCallbackTimeout.md)
 - [addOrGetSessionJsapiObject](docs/Other/addOrGetSessionJsapiObject.md)

@@ -433,9 +433,7 @@ module.exports = {
       try {
         let exec = require('child_process').exec;
         if (PV.isObject(options) === false) {
-          options = {
-            maxBuffer: 1024 * 500
-          };
+          options = {};
         }
         exec(cmd, options, function(error, stdout, stderr) {
           if (error) {
@@ -446,6 +444,35 @@ module.exports = {
             resolve({
               'stdout': stdout,
               'stderr': stderr
+            });
+          }
+        });
+      } catch (err) {
+        reject(err);
+      }
+    });
+  },
+
+  spawn: function(jsapi, cmd, args, options) {
+    return new Promise(function(resolve, reject) {
+      try {
+        let spawn = require('child_process').spawn;
+        if (PV.isObject(options) === false) {
+          options = {};
+        }
+        spawn(cmd, args, options, function(pid, output, stdout, stderr, status, signal, error) {
+          if (error) {
+            reject(error);
+          } else {
+            jsapi.logger.info('stdout: ' + stdout, true);
+            jsapi.logger.info('stderr: ' + stderr, true);
+            resolve({
+              'pid': pid,
+              'output': output,
+              'stdout': stdout,
+              'stderr': stderr,
+              'status': status,
+              'signal': signal
             });
           }
         });
