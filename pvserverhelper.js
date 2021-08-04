@@ -775,7 +775,7 @@ module.exports = {
     if (PV.isObject(projection) === false) {
       projection = {};
     }
-    return jsapi.mongoConnDb.collection(collectionName).find(filter, { projection: projection }).toArray();
+    return jsapi.mongoConnDb.collection(collectionName).find(filter).project(projection).toArray();
   },
 
   copy: function(jsapi, sourceCollection, targetCollection, filter, projection, overwriteKey) {
@@ -786,38 +786,32 @@ module.exports = {
       projection = {};
     }
     let batchSize = 2000;
-    return new Promise(function(resolve, reject) {
+    return new Promise(async function(resolve, reject) {
       let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
-      jsapi.mongoConnDb.collection(sourceCollection).find(filter, {
-        projection: projection
-      }, async function(err, cursor) {
-        if (err) {
-          reject(err);
-        }
-        try {
-          while (await cursor.hasNext()) {
-            let item = await cursor.next();
-            if (bulk.length > batchSize) {
-              await this.bulkExecute(bulk);
-              bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
-            }
+      try {
+        let cursor = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).project(projection);
+        while (await cursor.hasNext()) {
+          let item = await cursor.next();
+          if (bulk.length > batchSize) {
+            await this.bulkExecute(bulk);
+            bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
+          }
 
-            if (PV.isString(overwriteKey)) {
-              let filter2 = {};
-              filter2[overwriteKey] = item[overwriteKey];
-              bulk.find(filter2).deleteOne();
-            }
-            bulk.insert(item);
+          if (PV.isString(overwriteKey)) {
+            let filter2 = {};
+            filter2[overwriteKey] = item[overwriteKey];
+            bulk.find(filter2).deleteOne();
           }
-          if (bulk.length > 0) {
-            resolve(this.bulkExecute(bulk));
-          } else {
-            resolve();
-          }
-        } catch (e) {
-          reject(e);
+          bulk.insert(item);
         }
-      }.bind(this));
+        if (bulk.length > 0) {
+          resolve(this.bulkExecute(bulk));
+        } else {
+          resolve();
+        }
+      } catch (e) {
+        reject(e);
+      }
     }.bind(this));
   },
 
