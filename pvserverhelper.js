@@ -1132,15 +1132,23 @@ module.exports = {
         let userId = (params.userId ? params.userId : sessionInfo.user);
         let appName = params.appName;
         let mongoDBHostName = params.mongoDBHostName;
+
+        let html5AppName = null;
+        let html5DataSetId = null;
+        if (PV.isObject(sessionInfo.html5loginContext)) {
+          html5AppName = sessionInfo.html5loginContext.html5AppName;
+          html5DataSetId = sessionInfo.html5loginContext.html5DataSetId;
+        }
+
         let providerModelId = sessionInfo.providerModelId;
         if (PV.isString(userId) && (
             (PV.isString(appName) && PV.isString(mongoDBHostName)) ||
             (PV.isString(providerModelId)))) {
           for (let i = 0; i < providerModelInfo.length; i++) {
             if (providerModelInfo[i].userId === userId && (
-                (providerModelInfo[i].appName === appName &&
-                  providerModelInfo[i].mongoDBHostName === mongoDBHostName) ||
-                (providerModelInfo[i].modelId === providerModelId))) {
+                (providerModelInfo[i].appName === appName && providerModelInfo[i].mongoDBHostName === mongoDBHostName) ||
+                (providerModelInfo[i].modelId === providerModelId) ||
+                (providerModelInfo[i].appName === html5AppName && providerModelInfo[i].dataSetId === html5DataSetId))) {
               connectionInfo = providerModelInfo[i];
             }
           }
