@@ -1472,9 +1472,7 @@ module.exports = {
         }
       } else if (PV.isObject(jsapi.mongoConn) === false && PV.isObject(jsapi.mongoConnDb) === false) {
         if (PV.isObject(jsapi.mongo) && PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.dbname)) {
-          mongodb.MongoClient.connect(jsapi.mongo.url, {
-            useUnifiedTopology: true
-          }).then(function(dbconn) {
+          mongodb.MongoClient.connect(jsapi.mongo.url).then(function(dbconn) {
             jsapi.mongoConn = dbconn;
             try {
               jsapi.mongoConnDb = jsapi.mongoConn.db(jsapi.mongo.dbname);
