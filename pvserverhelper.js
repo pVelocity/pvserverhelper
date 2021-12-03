@@ -852,17 +852,23 @@ module.exports = {
   },
 
   getProperties: function(jsapi, collectionName) {
-    let mapFunction = function() {
-      for (let key in this) {
-        emit(key, null);
+    return jsapi.mongoConnDb.collection(collectionName).aggregate([{
+      $project: {
+        arrayofkeyvalue: {
+          $objectToArray: '$$ROOT'
+        }
       }
-    };
-    let reduceFunction = function(key, stuff) {
-      return null;
-    };
-    let options = { out: { 'inline': 1 } };
-    return jsapi.mongoConnDb.collection(collectionName).mapReduce(mapFunction, reduceFunction, options).then(function(result) {
-      return result.map(i => i._id);
+    }, {
+      $unwind: '$arrayofkeyvalue'
+    }, {
+      $group: {
+        _id: null,
+        allkeys: {
+          $addToSet: '$arrayofkeyvalue.k'
+        }
+      }
+    }]).toArray().then(function(result){
+      return result[0].allkeys;
     });
   },
 
