@@ -286,6 +286,25 @@ module.exports = {
     };
   },
 
+  logActivity: function(jsapi, type, source, tag, message) {
+    let curDate = new Date();
+    let isoDate = curDate.toISOString();
+    let params = {
+      Type: PV.escapeXml(type),
+      Source: PV.escapeXml(source),
+      Tag: PV.escapeXml(tag),
+      StartTime: isoDate
+    };
+    if (PV.isObject(message)) {
+      message = JSON.stringify(message);
+    }
+    if (PV.isString(message)) {
+      params.LogMessage = PV.escapeXml(message);
+    }
+
+    return jsapi.pv.sendRequest('LogActivity', params);
+  },
+
   convertFile: function(source, target, options, decoding, encoding) {
     return new Promise(function(resolve, reject) {
       let rd = fs.createReadStream(source);
@@ -867,7 +886,7 @@ module.exports = {
           $addToSet: '$arrayofkeyvalue.k'
         }
       }
-    }]).toArray().then(function(result){
+    }]).toArray().then(function(result) {
       return result[0].allkeys;
     });
   },
