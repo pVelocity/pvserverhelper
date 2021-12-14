@@ -1030,8 +1030,8 @@ module.exports = {
     jsapi.pv = new pvserver.PVServerAPI(url);
 
     if (PV.isObject(options)) {
-      if (PV.isNumber(options.timeOut)) {
-        jsapi.pv.timeOut = options.timeOut;
+      for (let prop in options) {
+        jsapi.pv[prop] = options[prop];
       }
     }
 
@@ -1082,8 +1082,8 @@ module.exports = {
       if (PV.isObject(jsapi.pv) === false) {
         jsapi.pv = new pvserver.PVServerAPI(jsapi.PVSession.engineSessionInfo.url);
         if (PV.isObject(options)) {
-          if (PV.isNumber(options.timeOut)) {
-            jsapi.pv.timeOut = options.timeOut;
+          for (let prop in options) {
+            jsapi.pv[prop] = options[prop];
           }
         }
         jsapi.pv.login(null, null, jsapi.PVSession.engineSessionInfo.apiKey).then(function(resp) {

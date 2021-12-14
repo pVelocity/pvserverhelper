@@ -25,6 +25,6 @@
     "iconv-lite": "^0.6.3",
     "mongodb": "^4.2.2",
     "pvjs": "^1.1.7",
-    "pvserver": "^0.4.0"
+    "pvserver": "^0.4.1"
   }
 }
