@@ -547,11 +547,26 @@ module.exports = {
         return jsapi.mongoConnDb.collection(collectionName).drop().then(function() {
           return jsapi.mongoConnDb.createCollection(collectionName);
         });
+      } else if (PV.isArray(indices)) {
+        return jsapi.mongoConnDb.collection(collectionName).indexInformation().then(function(result) {
+          let names = ['_id_'];
+          indices.forEach(function(info) {
+            names.push(Object.keys(info.key).join('_1_') + '_1');
+          });
+
+          let promises = [];
+          for (let indexName in result) {
+            if (names.includes(indexName) === false) {
+              promises.push(jsapi.mongoConnDb.dropIndex(collectionName, indexName));
+            }
+          }
+          return Promise.all(promises);
+        });
       } else {
-        return false;
+        return jsapi.mongoConnDb.collection(collectionName).dropIndexes();
       }
     }).then(function(result) {
-      if (PV.isObject(result) && PV.isArray(indices)) {
+      if (PV.isArray(indices)) {
         return jsapi.mongoConnDb.collection(collectionName).createIndexes(indices);
       } else {
         return result;
