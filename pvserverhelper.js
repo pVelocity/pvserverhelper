@@ -206,6 +206,8 @@ module.exports = {
       message = err.Message;
     } else if (PV.isFunction(err.message)) {
       message = err.message();
+    } else if (PV.isString(err)) {
+      message = err;
     } else {
       message = 'No Relevant Message';
     }
@@ -225,45 +227,50 @@ module.exports = {
         timestamp: timestamp
       };
     }
-    jsapi.logger.info = function(message) {
+
+    let getTimedMsg = function(message) {
       let timedMsg = '';
       if (jsapi.logger.timestamp === true) {
         timedMsg = PV.getTimestamp() + ' - ' + message;
       } else {
         timedMsg = message;
       }
+      return timedMsg;
+    };
+
+    let logFunc = function(level, message) {
       if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
-        jsapi.logger.log('info', timedMsg);
+        jsapi.logger.log(level, message);
       } else if (PV.isFunction(jsapi.log)) {
-        jsapi.log('info', timedMsg);
+        jsapi.log(level, message);
+      } else if (PV.isFunction(jsapi[level])) {
+        jsapi[level](message);
       } else {
-        console.log('INFO: ' + timedMsg);
+        console.log(`${level.toUpperCase()}: ` + message);
       }
     };
-    jsapi.logger.infoAsync = function(message) {
-      return new Promise(function(resolve) {
-        resolve(jsapi.logger.info(message));
-      });
-    };
+
+    jsapi.logger.info = function(message) {
+      let timedMsg = getTimedMsg(message);
+      logFunc('info', timedMsg);
+    }.bind(this);
+    jsapi.logger.infoAsync = util.promisify(jsapi.logger.info);
+
+    jsapi.logger.warn = function(message) {
+      let timedMsg = getTimedMsg(message);
+      logFunc('warn', timedMsg);
+    }.bind(this);
+    jsapi.logger.warnAsync = util.promisify(jsapi.logger.warn);
+
     jsapi.logger.error = function(error, throwError) {
       let message = this.getErrorMessage(error, jsapi.logger.timestamp);
-
-      if (PV.isObject(jsapi.logger) && PV.isFunction(jsapi.logger.log)) {
-        jsapi.logger.log('error', message);
-      } else if (PV.isFunction(jsapi.log)) {
-        jsapi.log('error', message);
-      } else {
-        console.log('ERROR: ' + message);
-      }
+      logFunc('error', message);
       if (throwError !== false) {
         throw error;
       }
     }.bind(this);
-    jsapi.logger.errorAsync = function(message) {
-      return new Promise(function(resolve) {
-        resolve(jsapi.logger.error(message));
-      });
-    };
+    jsapi.logger.errorAsync = util.promisify(jsapi.logger.error);
+
     jsapi.logger.startTime = function(message) {
       let timerObj = {
         startTime: new Date(),

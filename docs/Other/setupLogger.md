@@ -9,44 +9,66 @@ pvh.setupLogger(jsapi);
 
 Logger with default winston.
 ```js
-var jsapi = {
-	logger: require('winston')
-};
-jsapi.logger.add(jsapi.logger.transports.File, {
+var winston = require('winston')
+var jsapi = {};
+jsapi.logger = new winston.createLogger({
     level: 'info',
-    filename: '.\log.txt',
-    maxsize: '10000000', //10MB,
-    json: false,
-    timestamp: new Date
-});
+    transports: [
+      new winston.transports.File({
+        filename: 'log.txt',
+        maxsize: '10000000' //10MB
+      })
+    ]
+  });
 pvh.setupLogger(jsapi);
 ```
 
-Logger with instance winston.
+Logger with winston and multiple files.
 ```js
 var winston = require('winston')
 var jsapi = {};
-jsapi.logger = new winston.Logger({
-    transports: [new(winston.transports.File)({
-        level: 'info',
-        maxsize: '10000000', //10MB,
-        json: false,
-        timestamp: new Date,
-        filename: .\log.txt'
-    })]
-});
+jsapi.logger = new winston.createLogger({
+    level: 'info',
+    transports: [
+      new winston.transports.File({
+        filename: 'info.txt',
+        maxsize: '10000000' //10MB
+      }),
+      new winston.transports.File({
+        level: 'warn',
+        filename: 'warn.txt',
+        maxsize: '10000000' //10MB
+      })
+    ]
+  });
+pvh.setupLogger(jsapi);
+```
+
+Logger with multiple winston instance.
+```js
+var winston = require('winston')
+var jsapi = {};
+jsapi.logger = new winston.createLogger({
+    level: 'info',
+    transports: [
+      new winston.transports.File({
+        filename: 'log.txt',
+        maxsize: '10000000' //10MB
+      })
+    ]
+  });
 pvh.setupLogger(jsapi);
 
 var jsapi2 = {};
-jsapi2.logger = new winston.Logger({
-    transports: [new(winston.transports.File)({
-        level: 'info',
-        maxsize: '10000000', //10MB,
-        json: false,
-        timestamp: new Date,
-        filename: .\log2.txt'
-    })]
-});
+jsapi2.logger = new winston.createLogger({
+    level: 'info',
+    transports: [
+      new winston.transports.File({
+        filename: 'log2.txt',
+        maxsize: '10000000' //10MB
+      })
+    ]
+  });
 pvh.setupLogger(jsapi2);
 ```
 
@@ -58,14 +80,49 @@ Logs a message with `INFO`.
 jsapi.logger.info('Hello World');
 ```
 
+### ``warn(message)``
+Logs a message with `WARN`.
+- `message` `<String>`
+
+```js
+jsapi.logger.warn('Hello World');
+```
+
 ### ``error(error, throwError)``
 Logs a ``error`` with `ERROR`.
-- `error` `<Object>`
+- `error` `<Object>` or `<String>`
 - `throwError` `<Boolean>` : Optional, default is ``true``
 
 ```js
 jsapi.logger.error({
 	message: 'Opps'
+});
+```
+
+### ``infoAsync(message)``
+Calls `info` with a promise.
+- `message` `<String>`
+
+```js
+await jsapi.logger.infoAsync('Hello World');
+```
+
+### ``warnAsync(message)``
+Calls `warn` with a promise.
+- `message` `<String>`
+
+```js
+await jsapi.logger.warnAsync('Hello World');
+```
+
+### ``errorAsync(error, throwError)``
+Calls `error` with a promise.
+- `error` `<Object>` or `<String>`
+- `throwError` `<Boolean>` : Optional, default is ``true``
+
+```js
+await jsapi.logger.errorAsync({
+    message: 'Opps'
 });
 ```
 
