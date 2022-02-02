@@ -564,7 +564,7 @@ module.exports = {
           let promises = [];
           for (let indexName in result) {
             if (names.includes(indexName) === false) {
-              promises.push(jsapi.mongoConnDb.dropIndex(collectionName, indexName));
+              promises.push(jsapi.mongoConnDb.collection(collectionName).dropIndex(indexName));
             }
           }
           return Promise.all(promises);
