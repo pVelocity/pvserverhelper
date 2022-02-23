@@ -400,7 +400,7 @@ module.exports = {
     });
   },
 
-  execServlet: function(jsapi, headers, operation, params) {
+  execServlet: function(jsapi, headers, operation, params, handleTimeout) {
     return new Promise(function(resolve, reject) {
       let options = {
         headers: {
@@ -447,6 +447,13 @@ module.exports = {
       req.on('error', (e) => {
         reject(e);
       });
+
+      if (handleTimeout === true) {
+        req.on('timeout', () => {
+          req.destroy();
+          reject(`${operation} timed out.`);
+        });
+      }
 
       // Write data to request body
       req.write('');
