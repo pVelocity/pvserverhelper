@@ -44,7 +44,6 @@ let root = (typeof window === 'undefined') ? global : window;
   let types = [
     'Array',
     'Boolean',
-    'Database',
     'Date',
     'Element',
     'Function',
