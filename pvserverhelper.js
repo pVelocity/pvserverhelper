@@ -1678,7 +1678,10 @@ module.exports = {
     try {
       let dp = queryParams.AndFilter;
       PV.ensureArray(dp.OrFilter).forEach(function(compTerm) {
-        let category = compTerm._attrs.category;
+        let category = null;
+        if (PV.isObject(compTerm._attrs)) {
+          category = compTerm._attrs.category;
+        }
         if ((!objectName || (!category || category === objectName))) {
           PV.ensureArray(compTerm.AndFilter).forEach(function(andTerm) {
             PV.ensureArray(andTerm.Filter).forEach(function(filterTerm) {
@@ -1708,7 +1711,10 @@ module.exports = {
     try {
       let dp = queryParams.AndFilter;
       PV.ensureArray(dp.OrFilter).forEach(function(compTerm) {
-        let category = compTerm._attrs.category;
+        let category = null;
+        if (PV.isObject(compTerm._attrs)) {
+          category = compTerm._attrs.category;
+        }
         if ((!objectName || (!category || category === objectName))) {
           PV.ensureArray(compTerm.AndFilter).forEach(function(andTerm) {
             PV.ensureArray(andTerm.Filter).forEach(function(filterTerm) {
