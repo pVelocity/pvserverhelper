@@ -1738,6 +1738,54 @@ module.exports = {
     return result;
   },
 
+  removeFilterFromQueryParams: function(queryParams, objectName, groupName) {
+    let regexp = /^([^=]+)=[']([^']+)[']$/i;
+    try {
+      let orFilters = PV.ensureArray(queryParams.AndFilter.OrFilter);
+      for (let i = 0; i < orFilters.length; i++) {
+        let orTerm = orFilters[i];
+        let category = null;
+        if (PV.isObject(orTerm._attrs)) {
+          category = orTerm._attrs.category;
+        }
+        if ((!objectName || (!category || category === objectName))) {
+          let andFilter = PV.ensureArray(orTerm.AndFilter);
+          for (let j = 0; j < andFilter.length; j++) {
+            let andTerm = andFilter[j];
+            let filters = PV.ensureArray(andTerm.Filter);
+            for (let k = 0; k < filters.length; k++) {
+              let filterTerm = filters[k];
+              let term = filterTerm;
+              if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
+                term = filterTerm.text;
+              }
+              let matches = regexp.exec(term);
+              if (matches) {
+                let group = matches[1];
+                let value = matches[2];
+                if (group === groupName && value !== '[object Object]') {
+                  filters.splice(k, 1);
+                  k--;
+                }
+              }
+            }
+            if (filters.length === 0) {
+              andFilter.splice(j, 1);
+              j--;
+            }
+          }
+          if (andFilter.length === 0) {
+            orFilters.splice(i, 1);
+            i--;
+          }
+        }
+      }
+      if (orFilters.length === 0) {
+        delete queryParams.AndFilter;
+      }
+    } catch (ignore) {}
+  },
+
   getLastComponentSelections: function(components) {
     let comps = PV.ensureArray(components);
 
