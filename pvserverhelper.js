@@ -1800,12 +1800,18 @@ module.exports = {
       if (PV.isArray(queryParams.AndFilter.OrFilter) === false) {
         queryParams.AndFilter.OrFilter = [];
       }
-      queryParams.AndFilter.OrFilter.push({
-        _attrs: {
-          category: objectName
-        },
-        AndFilter: filters
-      });
+      if (PV.isString(objectName)) {
+        queryParams.AndFilter.OrFilter.push({
+          _attrs: {
+            category: objectName
+          },
+          AndFilter: filters
+        });
+      } else {
+        queryParams.AndFilter.OrFilter.push({
+          AndFilter: filters
+        });
+      }
     } catch (ignore) {}
   },
 
