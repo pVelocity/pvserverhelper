@@ -1786,6 +1786,29 @@ module.exports = {
     } catch (ignore) {}
   },
 
+  addFiltersToQueryParams: function(queryParams, objectName, filters) {
+    try {
+      if (PV.isObject(queryParams) === false) {
+        queryParams = {};
+      }
+      if (PV.isObject(queryParams.AndFilter) === false) {
+        queryParams.AndFilter = {};
+      }
+      if (PV.isObject(queryParams.AndFilter.OrFilter)) {
+        queryParams.AndFilter.OrFilter = [queryParams.AndFilter.OrFilter];
+      }
+      if (PV.isArray(queryParams.AndFilter.OrFilter) === false) {
+        queryParams.AndFilter.OrFilter = [];
+      }
+      queryParams.AndFilter.OrFilter.push({
+        _attrs: {
+          category: objectName
+        },
+        AndFilter: filters
+      });
+    } catch (ignore) {}
+  },
+
   getLastComponentSelections: function(components) {
     let comps = PV.ensureArray(components);
 
