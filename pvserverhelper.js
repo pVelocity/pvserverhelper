@@ -1815,6 +1815,37 @@ module.exports = {
     } catch (ignore) {}
   },
 
+  replaceGroupFromQueryParams: function(queryParams, objectName, mapping) {
+    let regexp = /^([^=]+)=[']([^']+)[']$/i;
+    try {
+      let dp = queryParams.AndFilter;
+      PV.ensureArray(dp.OrFilter).forEach(function(compTerm) {
+        PV.ensureArray(compTerm.AndFilter).forEach(function(andTerm) {
+          PV.ensureArray(andTerm.Filter).forEach(function(filterTerm) {
+            let term = filterTerm;
+            if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
+              term = filterTerm.text;
+            }
+            let matches = regexp.exec(term);
+            if (matches) {
+              let group = matches[1];
+              let value = matches[2];
+
+              if (PV.isString(mapping[group])) {
+                if (PV.isObject(filterTerm) && filterTerm.hasOwnProperty('text')) {
+                  filterTerm.text = `"${mapping[group]}='${value}'"`;
+                } else {
+                  filterTerm = `"${mapping[group]}='${value}'"`;
+                }
+                compTerm._attrs.category = objectName;
+              }
+            }
+          });
+        });
+      });
+    } catch (ignore) {}
+  },
+
   getLastComponentSelections: function(components) {
     let comps = PV.ensureArray(components);
 
