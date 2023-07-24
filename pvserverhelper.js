@@ -1348,6 +1348,10 @@ module.exports = {
   },
 
   getProviderModelUrl: async function(jsapi, options) {
+    if (PV.isObject(jsapi.mongo) === false) {
+      jsapi.mongo = {};
+    }
+
     if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
       jsapi.logger.info('Mongo Host, Database and Url already exist');
       return jsapi.mongo.url;
@@ -1415,6 +1419,10 @@ module.exports = {
   },
 
   setupMongoDBUrl: async function(jsapi, serverHost, serverPort, serverUserId, serverPassword, serverAuthDatabase, database, options) {
+    if (PV.isObject(jsapi.mongo) === false) {
+      jsapi.mongo = {};
+    }
+
     if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
       jsapi.logger.info('Mongo Host, Database and Url already exist');
       return jsapi.mongo.url;
