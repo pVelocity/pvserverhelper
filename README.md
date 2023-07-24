@@ -52,7 +52,6 @@ var pvh = require('pvserverhelper');
 - [dropCollection](docs/MongoDB/dropCollection.md)
 - [dropSomeCollections](docs/MongoDB/dropSomeCollections.md)
 - [cleanupChildren](docs/MongoDB/cleanupChildren.md)
-- [bulkExecute](docs/MongoDB/bulkExecute.md)
 - [getProperties](docs/MongoDB/getProperties.md)
 - [getABOMProperties](docs/MongoDB/getABOMProperties.md)
 - [getAggregateProjectMapping](docs/MongoDB/getAggregateProjectMapping.md)
