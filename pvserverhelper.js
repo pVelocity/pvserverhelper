@@ -816,7 +816,7 @@ module.exports = {
   find: function(jsapi, collectionName, id, projection) {
     let filter = {};
     if (PV.isString(id)) {
-      filter._id = new mongodb.ObjectId.createFromHexString(id);
+      filter._id = new mongodb.ObjectId(id);
     } else if (PV.isObject(id)) {
       filter._id = id;
     }
@@ -996,7 +996,7 @@ module.exports = {
 
       let updateFilter = {};
       if (PV.isString(id)) {
-        updateFilter._id = new mongodb.ObjectId.createFromHexString(id);
+        updateFilter._id = new mongodb.ObjectId(id);
       } else if (PV.isObject(id)) {
         updateFilter._id = id;
       }
