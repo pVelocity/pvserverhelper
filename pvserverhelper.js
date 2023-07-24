@@ -701,12 +701,7 @@ module.exports = {
       return jsapi.mongoConnDb.collection(sourceCollectionName).aggregate(pipeline, {
         allowDiskUse: true
       }).toArray();
-    }.bind(this)).then(function() {
-      let promises = [];
-
-      promises.push(this.dropCollection(jsapi, tempLookupCollection));
-      promises.push(this.dropCollection(jsapi, sourceCollectionName));
-
+    }.bind(this)).then(async function() {
       let bulk = jsapi.mongoConnDb.collection(tempSourceCollection).initializeOrderedBulkOp();
       for (let lookupField in lookupInfo) {
         let lookup = lookupInfo[lookupField];
@@ -745,8 +740,12 @@ module.exports = {
         bulk.find(filter2).update(update);
       }
       if (bulk.length > 0) {
-        promises.push(this.bulkExecute(bulk));
+        await bulk.execute();
       }
+
+      let promises = [];
+      promises.push(this.dropCollection(jsapi, tempLookupCollection));
+      promises.push(this.dropCollection(jsapi, sourceCollectionName));
       return Promise.all(promises);
     }.bind(this)).then(function() {
       return jsapi.mongoConnDb.collection(tempSourceCollection).rename(sourceCollectionName);
@@ -807,12 +806,11 @@ module.exports = {
     let batchSize = 2000;
 
     let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
-
     let cursor = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).project(projection);
     while (await cursor.hasNext()) {
       let item = await cursor.next();
       if (bulk.length > batchSize) {
-        await this.bulkExecute(bulk);
+        await bulk.execute();
         bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
       }
 
