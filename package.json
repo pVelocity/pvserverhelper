@@ -1,6 +1,6 @@
 {
   "name": "pvserverhelper",
-  "version": "3.0.2",
+  "version": "3.0.3",
   "description": "This is an npm module design to perform common uses with pVelocity's pvserver",
   "main": "pvserverhelper.js",
   "scripts": {
