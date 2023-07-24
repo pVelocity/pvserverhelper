@@ -58,40 +58,23 @@ module.exports = {
     }
   },
 
-  serializePromises: function(workFunction, workContext, workArray) {
+  serializePromises: async function(workFunction, workContext, workArray) {
     let results = [];
-    return new Promise(function(resolve, reject) {
-      let func = workFunction;
-      let context = workContext;
-      let next = function(curIndex) {
-        if (curIndex < workArray.length) {
-          if (PV.isArray(workFunction)) {
-            func = workFunction[curIndex];
-          }
-          if (PV.isArray(workContext)) {
-            context = workContext[curIndex];
-          }
 
-          func.apply(context, workArray[curIndex]).then(function(result) {
-            results.push(result);
-
-            setImmediate(function() {
-              next(curIndex + 1);
-            });
-          }).catch(function(err) {
-            reject(err);
-          });
-        } else {
-          resolve(results);
-        }
-      };
-
-      try {
-        next(0);
-      } catch (err) {
-        reject(err);
+    let func = workFunction;
+    let context = workContext;
+    for (let i = 0; i < workArray.length; i++) {
+      if (PV.isArray(workFunction)) {
+        func = workFunction[i];
       }
-    });
+      if (PV.isArray(workContext)) {
+        context = workContext[i];
+      }
+
+      results.push(await func.apply(context, workArray[i]));
+    }
+
+    return results;
   },
 
   cleanup: async function(jsapi) {
@@ -293,7 +276,7 @@ module.exports = {
     };
   },
 
-  logActivity: function(jsapi, type, source, tag, message) {
+  logActivity: async function(jsapi, type, source, tag, message) {
     let curDate = new Date();
     let isoDate = curDate.toISOString();
     let params = {
@@ -312,7 +295,7 @@ module.exports = {
     return jsapi.pv.sendRequest('LogActivity', params);
   },
 
-  convertFile: function(source, target, options, decoding, encoding) {
+  convertFile: async function(source, target, options, decoding, encoding) {
     return new Promise(function(resolve, reject) {
       let rd = fs.createReadStream(source);
       let wr = fs.createWriteStream(target);
@@ -359,7 +342,7 @@ module.exports = {
     }
   },
 
-  saveFile: function(url, dest, headers) {
+  saveFile: async function(url, dest, headers) {
     return new Promise(function(resolve, reject) {
       let file = fs.createWriteStream(dest);
 
@@ -400,7 +383,7 @@ module.exports = {
     });
   },
 
-  execServlet: function(jsapi, headers, operation, params, handleTimeout) {
+  execServlet: async function(jsapi, headers, operation, params, handleTimeout) {
     return new Promise(function(resolve, reject) {
       let options = {
         headers: {
@@ -461,14 +444,14 @@ module.exports = {
     });
   },
 
-  exec: function(jsapi, cmd, options) {
+  exec: async function(jsapi, cmd, options) {
     return new Promise(function(resolve, reject) {
       try {
-        let exec = require('child_process').exec;
+        let cp = require('child_process');
         if (PV.isObject(options) === false) {
           options = {};
         }
-        exec(cmd, options, function(error, stdout, stderr) {
+        cp.exec(cmd, options, function(error, stdout, stderr) {
           if (error) {
             reject(error);
           } else {
@@ -486,14 +469,14 @@ module.exports = {
     });
   },
 
-  spawn: function(jsapi, cmd, args, options) {
+  spawn: async function(jsapi, cmd, args, options) {
     return new Promise(function(resolve, reject) {
       try {
-        let spawn = require('child_process').spawn;
+        let cp = require('child_process');
         if (PV.isObject(options) === false) {
           options = {};
         }
-        spawn(cmd, args, options, function(pid, output, stdout, stderr, status, signal, error) {
+        cp.spawn(cmd, args, options, function(pid, output, stdout, stderr, status, signal, error) {
           if (error) {
             reject(error);
           } else {
@@ -515,19 +498,7 @@ module.exports = {
     });
   },
 
-  bulkExecute: function(bulk) {
-    return new Promise(function(resolve, reject) {
-      bulk.execute(function(err, result) {
-        if (err) {
-          reject(err);
-        } else {
-          resolve(result);
-        }
-      });
-    });
-  },
-
-  dropSomeCollections: function(jsapi, matchFunction) {
+  dropSomeCollections: async function(jsapi, matchFunction) {
     return jsapi.mongoConnDb.listCollections({}).toArray().then(function(result) {
       let promises = [];
       result.forEach(function(collection) {
@@ -539,7 +510,7 @@ module.exports = {
     });
   },
 
-  dropCollection: function(jsapi, collectionName) {
+  dropCollection: async function(jsapi, collectionName) {
     return jsapi.mongoConnDb.listCollections({
       name: collectionName
     }).toArray().then(function(result) {
@@ -551,7 +522,7 @@ module.exports = {
     });
   },
 
-  createCollection: function(jsapi, collectionName, drop, indices) {
+  createCollection: async function(jsapi, collectionName, drop, indices) {
     return jsapi.mongoConnDb.listCollections({
       name: collectionName
     }).toArray().then(function(result) {
@@ -608,7 +579,7 @@ module.exports = {
   //         tag: 'tag'
   //     }
   // };
-  aggregateLookup: function(jsapi, sourceCollectionName, lookupCollectionName, lookupInfo, lookupOperations) {
+  aggregateLookup: async function(jsapi, sourceCollectionName, lookupCollectionName, lookupInfo, lookupOperations) {
     let id = PV.getTimestamp() + Math.random();
     let tempLookupCollection = 'AG_' + PV.createHash(lookupCollectionName + '_' + id, 32);
     let tempSourceCollection = 'AG_' + PV.createHash(sourceCollectionName + '_' + id, 32);
@@ -813,7 +784,7 @@ module.exports = {
     return project;
   },
 
-  find: function(jsapi, collectionName, id, projection) {
+  find: async function(jsapi, collectionName, id, projection) {
     let filter = {};
     if (PV.isString(id)) {
       filter._id = new mongodb.ObjectId(id);
@@ -826,7 +797,7 @@ module.exports = {
     return jsapi.mongoConnDb.collection(collectionName).find(filter).project(projection).toArray();
   },
 
-  copy: function(jsapi, sourceCollection, targetCollection, filter, projection, overwriteKey) {
+  copy: async function(jsapi, sourceCollection, targetCollection, filter, projection, overwriteKey) {
     if (PV.isObject(filter) === false) {
       filter = {};
     }
@@ -834,72 +805,65 @@ module.exports = {
       projection = {};
     }
     let batchSize = 2000;
-    return new Promise(async function(resolve, reject) {
-      let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
-      try {
-        let cursor = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).project(projection);
-        while (await cursor.hasNext()) {
-          let item = await cursor.next();
-          if (bulk.length > batchSize) {
-            await this.bulkExecute(bulk);
-            bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
-          }
 
-          if (PV.isString(overwriteKey)) {
-            let filter2 = {};
-            filter2[overwriteKey] = item[overwriteKey];
-            bulk.find(filter2).deleteOne();
-          }
-          bulk.insert(item);
-        }
-        if (bulk.length > 0) {
-          resolve(this.bulkExecute(bulk));
-        } else {
-          resolve();
-        }
-      } catch (e) {
-        reject(e);
+    let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
+
+    let cursor = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).project(projection);
+    while (await cursor.hasNext()) {
+      let item = await cursor.next();
+      if (bulk.length > batchSize) {
+        await this.bulkExecute(bulk);
+        bulk = jsapi.mongoConnDb.collection(targetCollection).initializeOrderedBulkOp();
       }
-    }.bind(this));
+
+      if (PV.isString(overwriteKey)) {
+        let filter2 = {};
+        filter2[overwriteKey] = item[overwriteKey];
+        bulk.find(filter2).deleteOne();
+      }
+      bulk.insert(item);
+    }
+
+    if (bulk.length > 0) {
+      return await bulk.execute();
+    } else {
+      return null;
+    }
   },
 
-  move: function(jsapi, sourceCollection, targetCollection, filter, cleanId) {
+  move: async function(jsapi, sourceCollection, targetCollection, filter, cleanId) {
     if (PV.isObject(filter) === false) {
       filter = {};
     }
     let batchSize = 2000;
-    return new Promise(async function(resolve, reject) {
-      try {
-        let count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
-        while (count > 0) {
-          let insertedIds = [];
-          let sourceDocs = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).limit(batchSize).toArray();
-          let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeUnorderedBulkOp();
-          sourceDocs.forEach(function(doc) {
-            insertedIds.push(doc._id);
-            if (cleanId === true) {
-              delete doc._id;
-            }
-            bulk.insert(doc);
-          });
-          if (bulk.length > 0) {
-            await this.bulkExecute(bulk);
-          }
-          await jsapi.mongoConnDb.collection(sourceCollection).deleteMany({ _id: { $in: insertedIds } });
-          count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
+
+    let count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
+    while (count > 0) {
+      let insertedIds = [];
+      let sourceDocs = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).limit(batchSize).toArray();
+      let bulk = jsapi.mongoConnDb.collection(targetCollection).initializeUnorderedBulkOp();
+      sourceDocs.forEach(function(doc) {
+        insertedIds.push(doc._id);
+        if (cleanId === true) {
+          delete doc._id;
         }
-        if (PV.isEmptyObject(filter)) {
-          resolve(this.dropCollection(jsapi, sourceCollection));
-        } else {
-          resolve();
-        }
-      } catch (e) {
-        reject(e);
+        bulk.insert(doc);
+      });
+      if (bulk.length > 0) {
+        await bulk.execute();
       }
-    }.bind(this));
+      await jsapi.mongoConnDb.collection(sourceCollection).deleteMany({ _id: { $in: insertedIds } });
+      count = await jsapi.mongoConnDb.collection(sourceCollection).find(filter).count();
+    }
+
+    if (PV.isEmptyObject(filter)) {
+      return await this.dropCollection(jsapi, sourceCollection);
+    } else {
+      return null;
+    }
   },
 
-  getProperties: function(jsapi, collectionName) {
+  getProperties: async function(jsapi, collectionName) {
     return jsapi.mongoConnDb.collection(collectionName).aggregate([{
       $project: {
         arrayofkeyvalue: {
@@ -920,7 +884,7 @@ module.exports = {
     });
   },
 
-  getABOMProperties: function(jsapi, appName, objectName) {
+  getABOMProperties: async function(jsapi, appName, objectName) {
     return jsapi.mongoConnDb.collection('ABOM_Apps').find({
       Name: appName
     }).project({
@@ -953,13 +917,13 @@ module.exports = {
     });
   },
 
-  getAggregateProjectMapping: function(jsapi, collectionName) {
+  getAggregateProjectMapping: async function(jsapi, collectionName) {
     return this.getProperties(jsapi, collectionName).then(function(result) {
       return this.createExpressionMapping(result);
     }.bind(this));
   },
 
-  cleanupChildren: function(jsapi, collectionName, id, childrenMap) {
+  cleanupChildren: async function(jsapi, collectionName, id, childrenMap) {
     let projection = {};
     for (let child in childrenMap) {
       projection[childrenMap[child]] = 1;
@@ -1050,11 +1014,11 @@ module.exports = {
     }
   },
 
-  login: function(jsapi, protocol, host, port, username, password, credKey, sessionContext, options) {
+  login: async function(jsapi, protocol, host, port, username, password, credKey, sessionContext, options) {
     return this.loginWithUrl(jsapi, protocol + '://' + host + ':' + port, username, password, credKey, sessionContext, options);
   },
 
-  loginWithUrl: function(jsapi, url, username, password, credKey, sessionContext, options) {
+  loginWithUrl: async function(jsapi, url, username, password, credKey, sessionContext, options) {
     jsapi.logger.info('Logging in ' + url);
     jsapi.pv = new pvserver.PVServerAPI(url);
 
@@ -1092,39 +1056,42 @@ module.exports = {
       }
     }
 
-    return jsapi.pv.sendRequest('Login', params).then(function(json) {
-      jsapi.pv.user = json.PVResponse.PVStatus.User;
-      jsapi.pv.role = json.PVResponse.PVStatus.UserGroup;
-      return true;
+    return jsapi.pv.sendRequest('Login', params).then(function(resp) {
+      jsapi.pv.user = resp.PVResponse.PVStatus.User;
+      jsapi.pv.role = resp.PVResponse.PVStatus.UserGroup;
+      jsapi.pv.response = resp;
+      return resp;
     }).catch(function(err) {
       if (PV.isObject(err.json)) {
         jsapi.logger.error(this.getPVStatus(err.json));
       } else {
         jsapi.logger.error(err);
       }
-      return false;
     }.bind(this));
   },
 
-  loginWithSession: function(jsapi, options) {
-    return new Promise(function(resolve, reject) {
-      if (PV.isObject(jsapi.pv) === false) {
-        jsapi.pv = new pvserver.PVServerAPI(jsapi.PVSession.engineSessionInfo.url);
-        if (PV.isObject(options)) {
-          for (let prop in options) {
-            jsapi.pv[prop] = options[prop];
-          }
+  loginWithSession: async function(jsapi, options) {
+    if (PV.isObject(jsapi.pv) === false) {
+      jsapi.pv = new pvserver.PVServerAPI(jsapi.PVSession.engineSessionInfo.url);
+      if (PV.isObject(options)) {
+        for (let prop in options) {
+          jsapi.pv[prop] = options[prop];
         }
-        jsapi.pv.login(null, null, jsapi.PVSession.engineSessionInfo.apiKey).then(function(resp) {
-          resolve(true);
-        }).catch(function(err) {
-          jsapi.logger.error(this.getPVStatus(err.json), false);
-          reject(this.getPVStatus(err.json));
-        }.bind(this));
-      } else {
-        resolve(true);
       }
-    }.bind(this))
+
+      return jsapi.pv.login(null, null, jsapi.PVSession.engineSessionInfo.apiKey).then(function(resp) {
+        jsapi.pv.response = resp;
+        return resp;
+      }).catch(function(err) {
+        if (PV.isObject(err.json)) {
+          jsapi.logger.error(this.getPVStatus(err.json));
+        } else {
+          jsapi.logger.error(err);
+        }
+      }.bind(this));
+    } else {
+      return jsapi.pv.response;
+    }
   },
 
   parseProviderModelUrl: function(url) {
@@ -1235,87 +1202,119 @@ module.exports = {
     return PV.isString(jsapi[infoTag].modelId);
   },
 
-  createSalesforceProviderModel: function(jsapi, dataSetId, username, password) {
-    return new Promise(function(resolve, reject) {
-      if (PV.isObject(jsapi.sfdc) === false) {
-        jsapi.sfdc = {};
-      }
-      if (PV.isString(jsapi.sfdc.modelId)) {
-        resolve(true);
-      } else {
-        let dataSetQuery = {
-          'Type': 'Salesforce',
-          'KeyValue': [{
-            'Key': 'username',
-            'Value': username
-          }, {
-            'Key': 'password',
-            'Value': password
-          }, {
-            'Key': 'dataSetId',
-            'Value': dataSetId
-          }]
-        };
+  createSalesforceProviderModel: async function(jsapi, dataSetId, username, password) {
+    if (PV.isObject(jsapi.sfdc) === false) {
+      jsapi.sfdc = {};
+    }
 
-        jsapi.logger.info('Creating provider model with ' + username + ' with ' + dataSetId);
-        return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-          let status = this.getPVStatus(resp);
-          jsapi.sfdc.modelId = status.ModelId;
-          resolve(true);
-        }.bind(this)).catch(function(err) {
-          jsapi.logger.error(this.getPVStatus(err.json), false);
-          reject(this.getPVStatus(err.json));
-        }.bind(this));
-      }
-    }.bind(this));
+    if (PV.isString(jsapi.sfdc.modelId)) {
+      jsapi.logger.info('Provider model id already already exist');
+      return jsapi.sfdc.response;
+    } else {
+      let dataSetQuery = {
+        'Type': 'Salesforce',
+        'KeyValue': [{
+          'Key': 'username',
+          'Value': username
+        }, {
+          'Key': 'password',
+          'Value': password
+        }, {
+          'Key': 'dataSetId',
+          'Value': dataSetId
+        }]
+      };
+
+      jsapi.logger.info('Creating provider model with ' + username + ' with ' + dataSetId);
+      return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
+        jsapi.sfdc.response = resp;
+        let status = this.getPVStatus(resp);
+        jsapi.sfdc.modelId = status.ModelId;
+        return resp;
+      }.bind(this)).catch(function(err) {
+        if (PV.isObject(err.json)) {
+          jsapi.logger.error(this.getPVStatus(err.json));
+        } else {
+          jsapi.logger.error(err);
+        }
+      }.bind(this));
+    }
   },
 
-  createSalesforceProviderModelWithSession: function(jsapi, dataSetId, access_token, instance_url) {
-    return new Promise(function(resolve, reject) {
-      if (PV.isObject(jsapi.sfdc) === false) {
-        jsapi.sfdc = {};
-      }
-      if (PV.isString(jsapi.sfdc.modelId)) {
-        resolve(true);
-      } else {
-        let dataSetQuery = {
-          'Type': 'Salesforce',
-          'KeyValue': [{
-            'Key': 'dataSetId',
-            'Value': dataSetId
-          }, {
-            'Key': 'access_token',
-            'Value': access_token
-          }, {
-            'Key': 'instance_url',
-            'Value': instance_url
-          }]
-        };
+  createSalesforceProviderModelWithSession: async function(jsapi, dataSetId, access_token, instance_url) {
+    if (PV.isObject(jsapi.sfdc) === false) {
+      jsapi.sfdc = {};
+    }
 
-        jsapi.logger.info('Creating provider model with access_token on ' + instance_url + ' with ' + dataSetId);
-        return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-          let status = this.getPVStatus(resp);
-          jsapi.sfdc.modelId = status.ModelId;
-          resolve(true);
-        }.bind(this)).catch(function(err) {
-          jsapi.logger.error(this.getPVStatus(err.json), false);
-          reject(this.getPVStatus(err.json));
-        }.bind(this));
-      }
-    }.bind(this));
+    if (PV.isString(jsapi.sfdc.modelId)) {
+      jsapi.logger.info('Provider model id already already exist');
+      return jsapi.sfdc.response;
+    } else {
+      let dataSetQuery = {
+        'Type': 'Salesforce',
+        'KeyValue': [{
+          'Key': 'dataSetId',
+          'Value': dataSetId
+        }, {
+          'Key': 'access_token',
+          'Value': access_token
+        }, {
+          'Key': 'instance_url',
+          'Value': instance_url
+        }]
+      };
+
+      jsapi.logger.info('Creating provider model with access_token on ' + instance_url + ' with ' + dataSetId);
+      return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
+        jsapi.sfdc.response = resp;
+        let status = this.getPVStatus(resp);
+        jsapi.sfdc.modelId = status.ModelId;
+        return resp;
+      }.bind(this)).catch(function(err) {
+        if (PV.isObject(err.json)) {
+          jsapi.logger.error(this.getPVStatus(err.json));
+        } else {
+          jsapi.logger.error(err);
+        }
+      }.bind(this));
+    }
   },
 
-  createMongoProviderModel: function(jsapi, username, appName, dataSetId, options) {
-    return new Promise(function(resolve, reject) {
-      if (PV.isObject(jsapi.mongo) === false) {
-        jsapi.mongo = {};
-      }
+  createMongoProviderModel: async function(jsapi, username, appName, dataSetId, options) {
+    if (PV.isObject(jsapi.mongo) === false) {
+      jsapi.mongo = {};
+    }
 
-      if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
-        jsapi.logger.info('Provider model id already already exist');
-        resolve(this.getProviderModelUrl(jsapi, options));
-      } else {
-        jsapi.logger.info('Creating provider model with ' + username + ' for ' + appName + ' accessing dataSetId ' + dataSetId);
+    if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
+      jsapi.logger.info('Provider model id already already exist');
+      return await this.getProviderModelUrl(jsapi, options);
+    } else {
+      let dataSetQuery = {
+        'Type': 'MongoDB',
+        'KeyValue': [{
+          'Key': 'userId',
+          'Value': username
+        }, {
+          'Key': 'appName',
+          'Value': appName
+        }, {
+          'Key': 'dataSetId',
+          'Value': dataSetId
+        }]
+      };
+      jsapi.logger.info('Creating provider model with ' + username + ' for ' + appName + ' accessing dataSetId ' + dataSetId);
+      return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(async function(resp) {
+        let status = this.getPVStatus(resp);
+        jsapi.mongo.modelId = status.ModelId;
+
+        jsapi.logger.info('Getting provider model url with ' + status.ModelId);
+        return await this.getProviderModelUrl(jsapi, options);
+      }.bind(this)).catch(function(err) {
+        if (PV.isObject(err.json)) {
+          jsapi.logger.error(this.getPVStatus(err.json), false);
+        } else {
+          jsapi.logger.error(err, false);
+        }
 
         let dataSetQuery = {
           'Type': 'MongoDB',
@@ -1326,232 +1325,199 @@ module.exports = {
             'Key': 'appName',
             'Value': appName
           }, {
-            'Key': 'dataSetId',
+            'Key': 'mongoDBHostName',
             'Value': dataSetId
           }]
         };
-        return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
+        jsapi.logger.info('Attempting with ' + username + ' for ' + appName + ' accessing mongoDBHostName ' + dataSetId);
+        return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(async function(resp) {
           let status = this.getPVStatus(resp);
           jsapi.mongo.modelId = status.ModelId;
-          jsapi.logger.info('Getting provider model url with ' + status.ModelId);
-          resolve(this.getProviderModelUrl(jsapi, options));
-        }.bind(this)).catch(function(err) {
-          jsapi.logger.error(this.getPVStatus(err.json), false);
-          jsapi.logger.info('Failed to get provider model url with dataSetId ' + dataSetId);
 
-          let dataSetQuery = {
-            'Type': 'MongoDB',
-            'KeyValue': [{
-              'Key': 'userId',
-              'Value': username
-            }, {
-              'Key': 'appName',
-              'Value': appName
-            }, {
-              'Key': 'mongoDBHostName',
-              'Value': dataSetId
-            }]
-          };
-          jsapi.logger.info('Attempting with ' + username + ' for ' + appName + ' accessing mongoDBHostName ' + dataSetId);
-          return jsapi.pv.sendRequest('CreateProviderModel', dataSetQuery).then(function(resp) {
-            let status = this.getPVStatus(resp);
-            jsapi.mongo.modelId = status.ModelId;
-            jsapi.logger.info('Getting provider model url with ' + status.ModelId);
-            resolve(this.getProviderModelUrl(jsapi, options));
-          }.bind(this)).catch(function(err) {
-            jsapi.logger.error(this.getPVStatus(err.json), false);
-            reject(this.getPVStatus(err.json));
-          }.bind(this));
+          jsapi.logger.info('Getting provider model url with ' + status.ModelId);
+          return await this.getProviderModelUrl(jsapi, options);
+        }.bind(this)).catch(function(err) {
+          if (PV.isObject(err.json)) {
+            jsapi.logger.error(this.getPVStatus(err.json));
+          } else {
+            jsapi.logger.error(err);
+          }
         }.bind(this));
-      }
-    }.bind(this));
+      }.bind(this));
+    }
   },
 
-  getProviderModelUrl: function(jsapi, options) {
-    return new Promise(function(resolve, reject) {
-      if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
-        jsapi.logger.info('Mongo Host, Database and Url already exist');
-        resolve(true);
-      } else {
-        return jsapi.pv.sendRequest('GetProviderModelUrl', {
-          'ProfitModel': jsapi.mongo.modelId
-        }).then(function(resp) {
-          let status = this.getPVStatus(resp);
-          let info = this.parseProviderModelUrl(status.Url);
+  getProviderModelUrl: async function(jsapi, options) {
+    if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
+      jsapi.logger.info('Mongo Host, Database and Url already exist');
+      return jsapi.mongo.url;
+    } else {
+      return jsapi.pv.sendRequest('GetProviderModelUrl', {
+        'ProfitModel': jsapi.mongo.modelId
+      }).then(function(resp) {
+        let status = this.getPVStatus(resp);
+        let info = this.parseProviderModelUrl(status.Url);
 
-          jsapi.mongo.host = info.host;
-          jsapi.mongo.dbname = info.dbname;
+        jsapi.mongo.host = info.host;
+        jsapi.mongo.dbname = info.dbname;
 
-          let optionsStr = PV.convertObjectToStr(options);
-          if (optionsStr !== '') {
-            if (status.Url.indexOf('?') === -1) {
-              optionsStr = '?' + optionsStr;
-            } else {
-              optionsStr = '&' + optionsStr;
+        let optionsStr = PV.convertObjectToStr(options);
+        if (optionsStr !== '') {
+          if (status.Url.indexOf('?') === -1) {
+            optionsStr = '?' + optionsStr;
+          } else {
+            optionsStr = '&' + optionsStr;
+          }
+        }
+        jsapi.mongo.url = status.Url + optionsStr;
+
+        if (PV.isObject(info.options)) {
+          jsapi.mongo.options = info.options;
+        } else {
+          jsapi.mongo.options = null;
+        }
+        if (PV.isString(info.username)) {
+          jsapi.mongo.username = info.username;
+        } else {
+          jsapi.mongo.username = null;
+        }
+        if (PV.isString(info.password)) {
+          jsapi.mongo.password = info.password;
+        } else {
+          jsapi.mongo.password = null;
+        }
+
+        if (PV.isString(info.host) && PV.isString(info.dbname)) {
+          jsapi.logger.info('Mongo Host: ' + jsapi.mongo.host);
+          jsapi.logger.info('Mongo Database: ' + jsapi.mongo.dbname);
+          return jsapi.mongo.url;
+        } else {
+          throw {
+            message: 'Unable to extract Mongo host from data source url',
+            code: 'Parsing Error'
+          };
+        }
+      }.bind(this)).catch(function(err) {
+        jsapi.mongo.url = null;
+        jsapi.mongo.host = null;
+        jsapi.mongo.dbname = null;
+        jsapi.mongo.options = null;
+        jsapi.mongo.username = null;
+        jsapi.mongo.password = null;
+
+        if (PV.isObject(err.json)) {
+          jsapi.logger.error(this.getPVStatus(err.json));
+        } else {
+          jsapi.logger.error(err);
+        }
+      }.bind(this));
+    }
+  },
+
+  setupMongoDBUrl: async function(jsapi, serverHost, serverPort, serverUserId, serverPassword, serverAuthDatabase, database, options) {
+    if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
+      jsapi.logger.info('Mongo Host, Database and Url already exist');
+      return jsapi.mongo.url;
+    } else {
+      if (PV.isString(serverHost) && PV.isString(database)) {
+        jsapi.mongo.host = serverHost;
+        jsapi.mongo.dbname = database;
+        let arr = [];
+        arr.push('mongodb://');
+
+        if (PV.isString(serverUserId)) {
+          arr.push(encodeURIComponent(serverUserId));
+          jsapi.mongo.username = serverUserId;
+          if (PV.isString(serverPassword)) {
+            arr.push(':' + encodeURIComponent(serverPassword));
+            jsapi.mongo.password = serverPassword;
+          } else {
+            jsapi.mongo.password = null;
+          }
+          arr.push('@');
+        } else {
+          jsapi.mongo.username = null;
+          jsapi.mongo.password = null;
+        }
+        arr.push(serverHost);
+
+        if (PV.isString(serverPort)) {
+          arr.push(':' + serverPort);
+        }
+        arr.push('/' + database);
+
+        let optionsStr = null;
+        if (PV.isString(serverAuthDatabase)) {
+          let optionsObj = {};
+          if (PV.isObject(options)) {
+            for (let k in options) {
+              optionsObj[k] = options[k];
             }
           }
-          jsapi.mongo.url = status.Url + optionsStr;
+          optionsObj.authSource = serverAuthDatabase;
 
-          if (PV.isObject(info.options)) {
-            jsapi.mongo.options = info.options;
+          jsapi.mongo.options = optionsObj;
+          optionsStr = PV.convertObjectToStr(optionsObj);
+        } else {
+          if (PV.isObject(options)) {
+            jsapi.mongo.options = options;
+            optionsStr = PV.convertObjectToStr(options);
           } else {
             jsapi.mongo.options = null;
           }
-          if (PV.isString(info.username)) {
-            jsapi.mongo.username = info.username;
-          } else {
-            jsapi.mongo.username = null;
-          }
-          if (PV.isString(info.password)) {
-            jsapi.mongo.password = info.password;
-          } else {
-            jsapi.mongo.password = null;
-          }
+        }
 
-          if (PV.isString(info.host) && PV.isString(info.dbname)) {
-            jsapi.logger.info('Mongo Host: ' + jsapi.mongo.host);
-            jsapi.logger.info('Mongo Database: ' + jsapi.mongo.dbname);
-            resolve(true);
-          } else {
-            jsapi.logger.error({
-              message: 'Unable to extract Mongo host from data source url',
-              code: 'Parsing Error'
-            });
-          }
-        }.bind(this)).catch(function(err) {
-          jsapi.mongo.url = null;
-          jsapi.mongo.host = null;
-          jsapi.mongo.dbname = null;
-          jsapi.mongo.options = null;
-          jsapi.mongo.username = null;
-          jsapi.mongo.password = null;
-          jsapi.logger.error(this.getPVStatus(err.json), false);
-          reject(this.getPVStatus(err.json));
-        }.bind(this));
-      }
-    }.bind(this));
-  },
-
-  setupMongoDBUrl: function(jsapi, serverHost, serverPort, serverUserId, serverPassword, serverAuthDatabase, database, options) {
-    return new Promise(function(resolve, reject) {
-      if (PV.isObject(jsapi.mongo) === false) {
-        jsapi.mongo = {};
-      }
-      if (PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.host) && PV.isString(jsapi.mongo.dbname)) {
-        jsapi.logger.info('Mongo Host, Database and Url already exist');
-        resolve(true);
+        if (optionsStr !== '') {
+          arr.push('?' + optionsStr);
+        }
+        jsapi.mongo.url = arr.join('');
+        return jsapi.mongo.url;
       } else {
-        if (PV.isString(serverHost) && PV.isString(database)) {
-          jsapi.mongo.host = serverHost;
-          jsapi.mongo.dbname = database;
-          let arr = [];
-          arr.push('mongodb://');
-
-          if (PV.isString(serverUserId)) {
-            arr.push(encodeURIComponent(serverUserId));
-            jsapi.mongo.username = serverUserId;
-            if (PV.isString(serverPassword)) {
-              arr.push(':' + encodeURIComponent(serverPassword));
-              jsapi.mongo.password = serverPassword;
-            } else {
-              jsapi.mongo.password = null;
-            }
-            arr.push('@');
-          } else {
-            jsapi.mongo.username = null;
-            jsapi.mongo.password = null;
-          }
-          arr.push(serverHost);
-
-          if (PV.isString(serverPort)) {
-            arr.push(':' + serverPort);
-          }
-          arr.push('/' + database);
-
-          let optionsStr = null;
-          if (PV.isString(serverAuthDatabase)) {
-            let optionsObj = {};
-            if (PV.isObject(options)) {
-              for (let k in options) {
-                optionsObj[k] = options[k];
-              }
-            }
-            optionsObj.authSource = serverAuthDatabase;
-
-            jsapi.mongo.options = optionsObj;
-            optionsStr = PV.convertObjectToStr(optionsObj);
-          } else {
-            if (PV.isObject(options)) {
-              jsapi.mongo.options = options;
-              optionsStr = PV.convertObjectToStr(options);
-            } else {
-              jsapi.mongo.options = null;
-            }
-          }
-
-          if (optionsStr !== '') {
-            arr.push('?' + optionsStr);
-          }
-          jsapi.mongo.url = arr.join('');
-          resolve(true);
-        } else {
-          jsapi.mongo.url = null;
-          jsapi.mongo.host = null;
-          jsapi.mongo.dbname = null;
-          jsapi.mongo.options = null;
-          jsapi.mongo.username = null;
-          jsapi.mongo.password = null;
-          let err = {
-            message: 'Missing data source url parameters',
-            code: 'Bad Parameters'
-          };
-          jsapi.logger.error(err, false);
-          reject(err);
-        }
+        jsapi.mongo.url = null;
+        jsapi.mongo.host = null;
+        jsapi.mongo.dbname = null;
+        jsapi.mongo.options = null;
+        jsapi.mongo.username = null;
+        jsapi.mongo.password = null;
+        let err = {
+          message: 'Missing data source url parameters',
+          code: 'Bad Parameters'
+        };
+        jsapi.logger.error(err);
       }
-    });
+    }
   },
 
-  createMongoDB: function(jsapi) {
-    return new Promise(function(resolve, reject) {
+  createMongoDB: async function(jsapi) {
+    try {
       if (PV.isObject(jsapi.mongoConn) && PV.isObject(jsapi.mongoConnDb) === false) {
-        try {
-          jsapi.mongoConnDb = jsapi.mongoConn.db(jsapi.mongo.dbname);
-          resolve(true);
-        } catch (err) {
-          jsapi.mongoConn = null;
-          jsapi.mongoConnDb = null;
-          jsapi.logger.error(err, false);
-          reject(err);
-        }
+        jsapi.mongoConnDb = jsapi.mongoConn.db(jsapi.mongo.dbname);
+        return jsapi.mongoConnDb;
       } else if (PV.isObject(jsapi.mongoConn) === false && PV.isObject(jsapi.mongoConnDb) === false) {
         if (PV.isObject(jsapi.mongo) && PV.isString(jsapi.mongo.url) && PV.isString(jsapi.mongo.dbname)) {
-          mongodb.MongoClient.connect(jsapi.mongo.url).then(function(dbconn) {
-            jsapi.mongoConn = dbconn;
-            try {
-              jsapi.mongoConnDb = jsapi.mongoConn.db(jsapi.mongo.dbname);
-              resolve(true);
-            } catch (err) {
-              jsapi.mongoConn = null;
-              jsapi.mongoConnDb = null;
-              jsapi.logger.error(err, false);
-              reject(err);
-            }
-          });
+          jsapi.mongoConn = await mongodb.MongoClient.connect(jsapi.mongo.url);
+          jsapi.mongoConnDb = jsapi.mongoConn.db(jsapi.mongo.dbname);
+          return jsapi.mongoConnDb;
         } else {
-          jsapi.mongoConn = null;
-          jsapi.mongoConnDb = null;
           let err = {
             message: 'Missing data source url or database name',
             code: 'No Connection'
           };
-          jsapi.logger.error(err, false);
-          reject(err);
+          throw err;
         }
       } else {
-        resolve(true);
+        return jsapi.mongoConnDb;
       }
-    });
+    } catch (err) {
+      jsapi.mongoConn = null;
+      jsapi.mongoConnDb = null;
+
+      if (PV.isObject(err.json)) {
+        jsapi.logger.error(this.getPVStatus(err.json));
+      } else {
+        jsapi.logger.error(err);
+      }
+    }
   },
 
   getEntityGroupsAndFields: function(entity, entityArray) {
@@ -2014,7 +1980,7 @@ module.exports = {
     }
     return files;
   },
-  readFirstLine: function(filePath, options) {
+  readFirstLine: async function(filePath, options) {
     return new Promise(function(resolve, reject) {
       let rs = fs.createReadStream(filePath, options);
       let txt = '';
