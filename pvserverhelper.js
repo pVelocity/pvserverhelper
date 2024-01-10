@@ -383,7 +383,7 @@ module.exports = {
     });
   },
 
-  execServlet: async function(jsapi, headers, operation, params, handleTimeout) {
+  execServlet: async function(jsapi, headers, operation, params) {
     return new Promise(function(resolve, reject) {
       let options = {
         headers: {
@@ -431,7 +431,7 @@ module.exports = {
         reject(e);
       });
 
-      if (handleTimeout === true) {
+      if (PV.isNumber(options.timeout)) {
         req.on('timeout', () => {
           req.destroy();
           reject(`${operation} timed out.`);
